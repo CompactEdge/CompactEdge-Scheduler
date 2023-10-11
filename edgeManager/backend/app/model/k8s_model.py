@@ -8,8 +8,6 @@ from kubernetes.client.exceptions import ApiException
 from utils import format_datetime
 from utils.logger import Log
 
-WEBSERVER_NAME = "service"
-WEBSERVER_PORT = "8080"
 SLEEP_TIME = 3
 
 def load_k8s_config():
@@ -126,11 +124,6 @@ def list_all_pods(namespace, node):
                     data['pod_ip'] = pod.status.pod_ip
                     data['status'] = pod.status.phase
                     data['crt_time'] = format_datetime(pod.metadata.creation_timestamp)
-                    
-                    for container in pod.spec.containers:
-                        if container.image is not None:
-                            if WEBSERVER_NAME in container.image:
-                                data['container_port'] = WEBSERVER_PORT
                     
                     if (
                         pod.metadata.deletion_timestamp is None
