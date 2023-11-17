@@ -1,6 +1,6 @@
 import datetime
 
-from app.model import (EDGE_SENSOR_INDICIES, EDGE_TIME_FIELD, TIME_INTERVAL,
+from app.service import (EDGE_SENSOR_INDICIES, EDGE_TIME_FIELD, TIME_INTERVAL,
                        TIME_ZONE, TOTAL_SIZE)
 from elasticsearch import Elasticsearch
 from flask import current_app

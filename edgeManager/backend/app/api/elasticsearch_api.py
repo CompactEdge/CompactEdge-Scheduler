@@ -1,4 +1,4 @@
-from app.model import elasticsearch_model
+from app.service import elasticsearch_service
 from flask_restx import Namespace, Resource
 
 ns = Namespace("Elasticsearch api", description="Elasticsearch related operations")
@@ -10,7 +10,7 @@ class ListDatabase(Resource):
     def get(self):
         """List all Indices"""
 
-        return elasticsearch_model.list_indices()
+        return elasticsearch_service.list_indices()
 
 
 @ns.route("/edge_sensor/item_name", methods=['GET'])
@@ -19,7 +19,7 @@ class ListItemName(Resource):
     def get(self):
         """List all Item Name"""
 
-        return elasticsearch_model.list_item_names()
+        return elasticsearch_service.list_item_names()
 
 
 @ns.route("/edge_sensor/device_id", methods=['GET'])
@@ -28,7 +28,7 @@ class ListDeviceId(Resource):
     def get(self):
         """List all Device Id"""
 
-        return elasticsearch_model.list_device_ids()
+        return elasticsearch_service.list_device_ids()
 
 
 edge_sensor_doc_count_parser = ns.parser()
@@ -45,7 +45,7 @@ class EdgeSensorDocCount(Resource):
         """Get Doc Count"""
         args = edge_sensor_doc_count_parser.parse_args()
 
-        return elasticsearch_model.get_edge_sensor_doc_count(args['device_id'], args['start_date'], args['end_date'], args['time_interval'])
+        return elasticsearch_service.get_edge_sensor_doc_count(args['device_id'], args['start_date'], args['end_date'], args['time_interval'])
 
 
 edge_sensor_average_parser = ns.parser()
@@ -63,7 +63,7 @@ class EdgeSensorAverage(Resource):
         """Get Average Count"""
         args = edge_sensor_average_parser.parse_args()
 
-        return elasticsearch_model.get_edge_sensor_avg_count(args['item_name'], args['device_id'], args['start_date'], args['end_date'], args['time_interval'])
+        return elasticsearch_service.get_edge_sensor_avg_count(args['item_name'], args['device_id'], args['start_date'], args['end_date'], args['time_interval'])
 
 
 edge_sensor_all_parser = ns.parser()
@@ -81,4 +81,4 @@ class EdgeSensorAll(Resource):
         """Get Average Count"""
         args = edge_sensor_all_parser.parse_args()
 
-        return elasticsearch_model.get_edge_sensor_all(args['item_name'], args['device_id'], args['start_date'], args['end_date'], args['time_interval'])
+        return elasticsearch_service.get_edge_sensor_all(args['item_name'], args['device_id'], args['start_date'], args['end_date'], args['time_interval'])
