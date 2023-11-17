@@ -1,4 +1,4 @@
-from app.model import repos_model
+from app.service import repos_service
 from flask_restx import Namespace, Resource
 
 ns = Namespace("Repository api")
@@ -10,7 +10,7 @@ class imageList(Resource):
     def get(self):
 
         """List all Images"""
-        return repos_model.list_images()
+        return repos_service.list_images()
 
 
 @ns.route("/tags", methods=['GET'])
@@ -19,4 +19,4 @@ class tagList(Resource):
     def get(self):
 
         """tags in specific image"""
-        return repos_model.list_tags()
+        return repos_service.list_tags()
