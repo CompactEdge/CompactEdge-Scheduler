@@ -1,4 +1,4 @@
-from app.model import k8s_model
+from app.service import k8s_service
 from flask import abort, request
 from flask_restx import Namespace, Resource
 from utils.logger import Log
@@ -15,7 +15,7 @@ class NodeList(Resource):
         """List all Nodes"""
         Log.info("List all Nodes")
 
-        return k8s_model.list_node()
+        return k8s_service.list_node()
 
 
 # 전체 namespace 조회
@@ -27,7 +27,7 @@ class NamespaceList(Resource):
         """List all Namespaces"""
         Log.info("List all Namespaces")
 
-        return k8s_model.list_namespace()
+        return k8s_service.list_namespace()
 
 
 # pod 조회 
@@ -43,7 +43,7 @@ class PodList(Resource):
         node = request.args.get('node')
         Log.info("List Pod")
 
-        return k8s_model.list_all_pods(namespace, node)
+        return k8s_service.list_all_pods(namespace, node)
 
 # deployment 조회 
 @ns.route("/deployment", methods=['GET'])
@@ -56,7 +56,7 @@ class DeploymentList(Resource):
         namespace = request.args.get('namespace')
         Log.info("List Deployment")
 
-        return k8s_model.list_namespaced_deployment(namespace)
+        return k8s_service.list_namespaced_deployment(namespace)
 
 # daemonset 조회 
 @ns.route("/daemonset", methods=['GET'])
@@ -69,7 +69,7 @@ class DaemonsetList(Resource):
         namespace = request.args.get('namespace')
         Log.info("List Daemonset")
 
-        return k8s_model.list_namespaced_daemon_set(namespace)
+        return k8s_service.list_namespaced_daemon_set(namespace)
 
 # replicaset 조회 
 @ns.route("/replicaset", methods=['GET'])
@@ -82,7 +82,7 @@ class ReplicasetList(Resource):
         namespace = request.args.get('namespace')
         Log.info("List Replicaset")
 
-        return k8s_model.list_namespaced_replica_set(namespace)
+        return k8s_service.list_namespaced_replica_set(namespace)
 
 # statefulset 조회 
 @ns.route("/statefulset", methods=['GET'])
@@ -95,7 +95,7 @@ class StatefulsetList(Resource):
         namespace = request.args.get('namespace')
         Log.info("List Statefulset")
 
-        return k8s_model.list_namespaced_stateful_set(namespace)
+        return k8s_service.list_namespaced_stateful_set(namespace)
 
 # job 조회 
 @ns.route("/job", methods=['GET'])
@@ -108,7 +108,7 @@ class JobList(Resource):
         namespace = request.args.get('namespace')
         Log.info("List Job")
 
-        return k8s_model.list_namespaced_job(namespace)
+        return k8s_service.list_namespaced_job(namespace)
 
 # persistent volume 조회 
 @ns.route("/persistent_volume", methods=['GET'])
@@ -119,7 +119,7 @@ class PersistentVolumeList(Resource):
         """List all Persistent volume"""
         Log.info("List all Persistent volume")
 
-        return k8s_model.list_persistent_volume()
+        return k8s_service.list_persistent_volume()
 
 # persistent volume claim 조회 
 @ns.route("/persistent_volume_claim", methods=['GET'])
@@ -132,7 +132,7 @@ class PersistentVolumeClaimList(Resource):
         namespace = request.args.get('namespace')
         Log.info("List Persistent volume claim")
 
-        return k8s_model.list_namespaced_persistent_volume_claim(namespace)
+        return k8s_service.list_namespaced_persistent_volume_claim(namespace)
 
 # 전체 storageclass 조회
 @ns.route("/storageclass", methods=['GET'])
@@ -143,7 +143,7 @@ class StorageclassList(Resource):
         """List all Storageclass"""
         Log.info("List all Storageclass")
 
-        return k8s_model.list_storage_class()
+        return k8s_service.list_storage_class()
 
 
 # 전체 service 조회
@@ -157,7 +157,7 @@ class ServiceList(Resource):
         namespace = request.args.get('namespace')
         Log.info("List Service")
 
-        return k8s_model.list_namespaced_service(namespace)
+        return k8s_service.list_namespaced_service(namespace)
 
 
 # 특정 Pod 삭제 
@@ -171,7 +171,7 @@ class DeletePod(Resource):
         """Delete specific pod in specific namespace"""
         Log.info("Delete specific pod in specific namespace")
 
-        return k8s_model.delete_pod(namespace, pod_name)
+        return k8s_service.delete_pod(namespace, pod_name)
 
 
 # 특정 node에 local repository에 있는 image 띄우기
@@ -186,7 +186,7 @@ class CreatePod(Resource):
     def post(self, namespace, node, pod_name, image):
         """Create pod"""
 
-        res = k8s_model.create_pod(namespace, node, pod_name, image)
+        res = k8s_service.create_pod(namespace, node, pod_name, image)
         if res == "error":
             abort(500)
         else:
@@ -205,7 +205,7 @@ class CreateDeployment(Resource):
     def post(self, namespace, deployment_name, image, replicas, container_port):
         """Create deployment"""
         
-        res = k8s_model.create_deployment(namespace, deployment_name, image, replicas, container_port)
+        res = k8s_service.create_deployment(namespace, deployment_name, image, replicas, container_port)
         if res == "error":
             abort(500)
         elif res == "existed":
@@ -228,7 +228,7 @@ class CreateDeployment(Resource):
 class CreateService(Resource):
     def post(self, service_name, namespace, service_type, selector, port, target_port, node_port):
         """Create service"""
-        res = k8s_model.create_service(service_name, namespace, service_type, selector, port, target_port, node_port)
+        res = k8s_service.create_service(service_name, namespace, service_type, selector, port, target_port, node_port)
 
         if res == "error":
             abort(500)
@@ -250,7 +250,7 @@ class DeleteDeployment(Resource):
         """Delete specific deployment in specific namespace"""
         Log.info("Delete specific deployment in specific namespace")
        
-        return k8s_model.delete_deployment_name(namespace, deployment_name)
+        return k8s_service.delete_deployment_name(namespace, deployment_name)
 
 
 # 특정 service 삭제 
@@ -264,4 +264,4 @@ class DeleteService(Resource):
         """Delete specific service in specific namespace"""
         Log.info("Delete specific service in specific namespace")
        
-        return k8s_model.delete_service(namespace, service_name)
+        return k8s_service.delete_service(namespace, service_name)

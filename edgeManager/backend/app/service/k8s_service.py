@@ -1,7 +1,7 @@
 import time
 from datetime import datetime, timedelta
 
-from app.model import CONDITION_READY, PHASE_RUNNING, PHASE_TERMINATING
+from app.service import CONDITION_READY, PHASE_RUNNING, PHASE_TERMINATING
 from flask import current_app
 from kubernetes import client, config
 from kubernetes.client.exceptions import ApiException
