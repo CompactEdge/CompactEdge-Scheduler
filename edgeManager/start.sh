@@ -17,23 +17,6 @@ if [ "$ENV" == "run" ]; then
     fi
     python3 run.py
 
-elif [ "$ENV" == "start" ]; then
-    cd frontend
-
-    npm start
-    if [ $? -ne 0 ]; then
-        echo ">>> npm start fail, try to npm install"
-        npm run clean
-        if [ $? -eq 0 ]; then
-            npm install --legacy-peer-deps
-        fi
-    fi
-    npm start
-
-elif [ "$ENV" == "clean" ]; then
-    cd frontend
-
-    npm run clean
 
 elif [ "$ENV" == "build" ]; then
     cd frontend
@@ -41,37 +24,46 @@ elif [ "$ENV" == "build" ]; then
     npm run build
     if [ $? -ne 0 ]; then
         echo ">>> npm build fail, try to npm install"
-        npm run clean
-        if [ $? -eq 0 ]; then
-            npm install --legacy-peer-deps
+        if [ ! -d node_modules ] ; then
+            npm run clean
+            if [ $? -eq 0 ]; then
+                npm install --legacy-peer-deps
+            fi
         fi
     fi
 
     if [ $? -eq 0 ]; then
         npm run build
         if [ $? -eq 0 ]; then
-            tar -zcf build.tar build
+            cd ../backend
 
         else
             echo ">>> npm install and build fail"
         fi
     fi
 
-elif [ "$ENV" == "apply" ]; then
-    cd frontend
-    rm -rf build
+elif [ "$ENV" == "development" ]; then
+    cd backend
 
-    tar -xvf build.tar
+    python3.9 run.py
+    if [ $? -ne 0 ]; then
+        echo ">>> python run fail, try to pip install"
+        python3.9 -m pip install -r requirements.txt
+    fi
+    python3.9 run.py
 
-elif [ "$ENV" == "test" ]; then
+
+elif [ "$ENV" == "production" ]; then
     cd frontend
 
     npm run build
     if [ $? -ne 0 ]; then
         echo ">>> npm build fail, try to npm install"
-        npm run clean
-        if [ $? -eq 0 ]; then
-            npm install --legacy-peer-deps
+        if [ ! -d node_modules ] ; then
+            npm run clean
+            if [ $? -eq 0 ]; then
+                npm install --legacy-peer-deps
+            fi
         fi
     fi
 
