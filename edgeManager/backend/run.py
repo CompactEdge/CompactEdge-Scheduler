@@ -8,7 +8,7 @@ from utils.logger import Log
 
 # .env 파일에서 PROJECT_NAME, FLASK_ENV 값을 읽음
 # config.py에 설정된 Debug 클래스의 설정 또는 Production 클래스의 설정을 결정함 
-get_config_mode = config('ENV_NAME', default='Edge', cast=str)
+get_config_mode = config('ENV_NAME', default='Local', cast=str)
 
 try:
     # Load the configuration 

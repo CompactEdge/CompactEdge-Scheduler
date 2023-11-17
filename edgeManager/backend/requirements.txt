@@ -1,5 +1,5 @@
-Flask==2.2.2
-flask-restx==1.0.3
+Flask==2.2.3
+flask-restx==1.1.0
 flask-cors==3.0.10
 python-decouple==3.6
 python-dotenv==0.21.0
