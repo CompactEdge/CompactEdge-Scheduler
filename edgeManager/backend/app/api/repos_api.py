@@ -8,7 +8,6 @@ ns = Namespace("Repository api")
 @ns.doc("list all images in repository")
 class imageList(Resource):
     def get(self):
-
         """List all Images"""
         return repos_service.list_images()
 
@@ -17,6 +16,5 @@ class imageList(Resource):
 @ns.doc("list all images in repository")
 class tagList(Resource):
     def get(self):
-
         """tags in specific image"""
         return repos_service.list_tags()

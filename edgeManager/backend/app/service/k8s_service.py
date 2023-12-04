@@ -10,36 +10,80 @@ from utils.logger import Log
 
 SLEEP_TIME = 3
 
+
 def load_k8s_config():
     config.load_kube_config(config_file=current_app.config['CONFIG_FILE'])
 
-# 전체 node 리스트 조회
+
+def list_node_status():
+    # 전체 node 상태 조회
+    k8s_nodes = list()
+
+    try:
+        load_k8s_config()
+        core_v1_api = client.CoreV1Api()
+        res = core_v1_api.list_node()
+
+        if res is not None:
+            for node in res.items:
+                if node.metadata.managed_fields[0].manager != 'kube-apiserver':
+                    data = dict()
+                    data['name'] = node.metadata.name
+                    data['crt_time'] = format_datetime(
+                        node.metadata.creation_timestamp)
+                    data['status'] = 'Ready' if node.status.conditions[-1].status == 'True' else 'NotReady'
+                    if ('node-role.kubernetes.io/master' in node.metadata.labels):
+                        data['node_role'] = 'master'
+                    else:
+                        data['node_role'] = 'worker'
+
+                    k8s_nodes.append(data)
+        else:
+            Log.info("fail to list node status")
+
+    except ApiException as ex:
+        Log.error(ex)
+        return ex.reason, ex.status
+
+    return k8s_nodes
+
+
 def list_node():
-    node_list = list()
+    # 전체 node 리스트 조회
+    onpremise_node_list = list()
+    cloud_node_list = list()
+
     try:
         load_k8s_config()
         core_v1 = client.CoreV1Api()
         res = core_v1.list_node()
+
         if res is not None:
             for node in res.items:
                 if node.metadata.managed_fields[0].manager != 'kube-apiserver' and node.status.conditions[4].status == "True":
                     data = dict()
 
                     data['name'] = node.metadata.name
-                    data['crt_time'] = format_datetime(node.metadata.creation_timestamp)
-                    if('node-role.kubernetes.io/master' in node.metadata.labels):
+                    data['crt_time'] = format_datetime(
+                        node.metadata.creation_timestamp)
+                    data['node_type'] = node.metadata.labels['node-type']
+                    if ('node-role.kubernetes.io/master' in node.metadata.labels):
                         data['node_role'] = 'master'
                     else:
-                        data['node_role'] = 'worker'    
+                        data['node_role'] = 'worker'
 
-                    node_list.append(data)            
+                    if data['node_type'] == 'onpremise':
+                        onpremise_node_list.append(data)
+                    else:
+                        cloud_node_list.append(data)
         else:
             Log.info("fail to list node")
-            
+
     except ApiException as ex:
         Log.error(ex)
         return ex.reason, ex.status
 
+    node_list = onpremise_node_list + cloud_node_list
     return node_list
 
 
@@ -55,7 +99,8 @@ def list_namespace():
             for item in res.items:
                 data = dict()
                 data['name'] = item.metadata.name
-                data['crt_time'] = format_datetime(item.metadata.creation_timestamp)
+                data['crt_time'] = format_datetime(
+                    item.metadata.creation_timestamp)
                 all_namespace_list.append(data)
 
     except ApiException as ex:
@@ -64,8 +109,9 @@ def list_namespace():
 
     return all_namespace_list
 
-# system 제외 namespace 조회
+
 def list_namespace_except_system():
+    # system 제외 namespace 조회
     namespace_list = list()
     try:
         load_k8s_config()
@@ -75,11 +121,12 @@ def list_namespace_except_system():
             for item in res.items:
                 if ((item.metadata.managed_fields is not None) and (item.metadata.managed_fields[0].manager == 'kube-apiserver') and (item.metadata.name != 'default')):
                     continue
-                
+
                 data = dict()
                 data['name'] = item.metadata.name
-                data['crt_time'] = format_datetime(item.metadata.creation_timestamp)
-                
+                data['crt_time'] = format_datetime(
+                    item.metadata.creation_timestamp)
+
                 namespace_list.append(data)
 
     except ApiException as ex:
@@ -89,8 +136,8 @@ def list_namespace_except_system():
     return namespace_list
 
 
-# pod 조회 
 def list_all_pods(namespace, node):
+    # pod 조회
     namespace_list = list_namespace_except_system()
     pods_list = list()
 
@@ -116,25 +163,27 @@ def list_all_pods(namespace, node):
                 continue
 
             for namespace in namespace_list:
-                if(namespace["name"] == pod.metadata.namespace):
+                if (namespace["name"] == pod.metadata.namespace):
                     data['namespace'] = pod.metadata.namespace
                     data['node_name'] = pod.spec.node_name
                     data['pod_name'] = pod.metadata.name
                     data['host_ip'] = pod.status.host_ip
                     data['pod_ip'] = pod.status.pod_ip
                     data['status'] = pod.status.phase
-                    data['crt_time'] = format_datetime(pod.metadata.creation_timestamp)
-                    
+                    data['crt_time'] = format_datetime(
+                        pod.metadata.creation_timestamp)
+
                     if (
                         pod.metadata.deletion_timestamp is None
                         and pod.status.phase == PHASE_RUNNING
-                        ):
-                            pods_list.append(data)
+                    ):
+                        pods_list.append(data)
 
     return pods_list
 
-# 특정 Pod 삭제  
+
 def delete_pod(namespace_name, pod_name):
+    # 특정 Pod 삭제
     try:
         load_k8s_config()
         core_v1 = client.CoreV1Api()
@@ -146,23 +195,25 @@ def delete_pod(namespace_name, pod_name):
     except ApiException as ex:
         Log.error(ex)
         return ex.reason, ex.status
-    
+
     return "ok"
 
-# 이미지 배포
+
 def create_pod(namespace_name, node_name, pod_name, image_name):
-    pod_manifest = pod_template(namespace_name, node_name, pod_name, image_name)
-    
+    # 이미지 배포
+    pod_manifest = pod_template(
+        namespace_name, node_name, pod_name, image_name)
+
     ready = False
     count = 0
-    total_cnt = 10
+    total_cnt = 60
 
     try:
         load_k8s_config()
         core_v1 = client.CoreV1Api()
         core_v1.create_namespaced_pod(
-            namespace = namespace_name,
-            body= pod_manifest
+            namespace=namespace_name,
+            body=pod_manifest
         )
 
     except ApiException as ex:
@@ -186,12 +237,11 @@ def create_pod(namespace_name, node_name, pod_name, image_name):
 
         if count >= total_cnt:
             break
-        
-            
+
     if ready:
         Log.info("파드 생성 완료")
         return "ok"
-    
+
     return "error"
 
 
@@ -202,28 +252,28 @@ def get_pod(namespace_name, pod_name):
         pod_list = core_v1.list_namespaced_pod(
             namespace_name
         )
-            
+
         for pod in pod_list.items:
-            if(pod_name == pod.metadata.name):
+            if (pod_name == pod.metadata.name):
                 if (
-                pod.metadata.deletion_timestamp is None
-                and pod.status.phase == PHASE_RUNNING
+                    pod.metadata.deletion_timestamp is None
+                    and pod.status.phase == PHASE_RUNNING
                 ):
-                    break;
+                    break
 
         return pod
 
     except ApiException as ex:
         Log.error(ex)
-        return ex.reason, ex.status 
+        return ex.reason, ex.status
 
 
 def collect_pod_ready_status(ready, pod, pod_name):
 
     if pod.status is None:
         return False
-    
-    if(pod_name == pod.metadata.name):
+
+    if (pod_name == pod.metadata.name):
         for condition in pod.status.conditions:
             if condition.type == CONDITION_READY:
                 state: str
@@ -247,7 +297,7 @@ def collect_pod_ready_status(ready, pod, pod_name):
                         condition.status,
                     )
                 )
-                
+
         return ready
 
 
@@ -255,45 +305,47 @@ def str_to_bool(v: str):
 
     return v.lower() in ("yes", "true", "1")
 
+
 def pod_template(namespace_name, node_name, pod_name, image_name):
     return {
-    "apiVersion": "v1",
-    "kind": "Pod",
-    "metadata": {
-        "name": pod_name,
-        "namespace": namespace_name
-    },
-    "spec": {
-        "containers": [
-        {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "metadata": {
             "name": pod_name,
-            "image": current_app.config['REPOS_IP'] + ":" + str(current_app.config['REPOS_PORT']) + "/" + image_name
-        }
-        ],
-        "affinity": {
-        "nodeAffinity": {
-            "requiredDuringSchedulingIgnoredDuringExecution": {
-            "nodeSelectorTerms": [
+            "namespace": namespace_name
+        },
+        "spec": {
+            "containers": [
                 {
-                "matchExpressions": [
-                    {
-                    "key": "kubernetes.io/hostname",
-                    "operator": "In",
-                    "values": [
-                        node_name
-                    ]
-                    }
-                ]
+                    "name": pod_name,
+                    "image": current_app.config['REPOS_IP'] + ":" + str(current_app.config['REPOS_PORT']) + "/" + image_name
                 }
-            ]
+            ],
+            "affinity": {
+                "nodeAffinity": {
+                    "requiredDuringSchedulingIgnoredDuringExecution": {
+                        "nodeSelectorTerms": [
+                            {
+                                "matchExpressions": [
+                                    {
+                                        "key": "kubernetes.io/hostname",
+                                        "operator": "In",
+                                        "values": [
+                                            node_name
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
             }
         }
-        }
-    }
     }
 
-# deployment 리스트 조회 ------------------------ https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/AppsV1Api.md
+
 def list_namespaced_deployment(namespace):
+    # deployment 리스트 조회 ------------------------ https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/AppsV1Api.md
     deployment_list = list()
     try:
         load_k8s_config()
@@ -321,8 +373,9 @@ def list_namespaced_deployment(namespace):
             now = datetime.now().astimezone()
             creation_timestamp = item.metadata.creation_timestamp.astimezone()
             age = now - creation_timestamp
-            deployment['age'] = str(age - timedelta(microseconds=age.microseconds))
-            
+            deployment['age'] = str(
+                age - timedelta(microseconds=age.microseconds))
+
             containers = list()
             images = list()
 
@@ -345,11 +398,12 @@ def list_namespaced_deployment(namespace):
             deployment_list.append(deployment)
     else:
         return None
-    
+
     return deployment_list
 
-# daemonset 리스트 조회
+
 def list_namespaced_daemon_set(namespace):
+    # daemonset 리스트 조회
     daemonset_list = list()
 
     try:
@@ -367,7 +421,7 @@ def list_namespaced_daemon_set(namespace):
     if res is not None:
         for item in res.items:
             daemonset = dict()
-            
+
             daemonset['namespace'] = item.metadata.namespace
             daemonset['name'] = item.metadata.name
             daemonset['desired_number_scheduled'] = item.status.desired_number_scheduled
@@ -389,7 +443,8 @@ def list_namespaced_daemon_set(namespace):
             now = datetime.now().astimezone()
             creation_timestamp = item.metadata.creation_timestamp.astimezone()
             age = now - creation_timestamp
-            daemonset['age'] = str(age - timedelta(microseconds=age.microseconds))
+            daemonset['age'] = str(
+                age - timedelta(microseconds=age.microseconds))
 
             containers = list()
             images = list()
@@ -412,10 +467,12 @@ def list_namespaced_daemon_set(namespace):
             daemonset_list.append(daemonset)
     else:
         return None
-    
+
     return daemonset_list
 
 # replicaset 리스트 조회
+
+
 def list_namespaced_replica_set(namespace):
     replicaset_list = list()
 
@@ -434,17 +491,19 @@ def list_namespaced_replica_set(namespace):
     if res is not None:
         for item in res.items:
             replicaset = dict()
-            
+
             replicaset['namespace'] = item.metadata.namespace
             replicaset['name'] = item.metadata.name
-            replicaset['desired-replicas'] = int(item.metadata.annotations['deployment.kubernetes.io/desired-replicas'])
+            replicaset['desired-replicas'] = int(
+                item.metadata.annotations['deployment.kubernetes.io/desired-replicas'])
             replicaset['current_replicas'] = item.status.available_replicas
             replicaset['ready_replicas'] = item.status.ready_replicas
 
             now = datetime.now().astimezone()
             creation_timestamp = item.metadata.creation_timestamp.astimezone()
             age = now - creation_timestamp
-            replicaset['age'] = str(age - timedelta(microseconds=age.microseconds))
+            replicaset['age'] = str(
+                age - timedelta(microseconds=age.microseconds))
 
             containers = list()
             images = list()
@@ -467,10 +526,12 @@ def list_namespaced_replica_set(namespace):
             replicaset_list.append(replicaset)
     else:
         return None
-    
+
     return replicaset_list
 
 # statefulset 리스트 조회
+
+
 def list_namespaced_stateful_set(namespace):
     statefulset_list = list()
 
@@ -500,7 +561,8 @@ def list_namespaced_stateful_set(namespace):
             now = datetime.now().astimezone()
             creation_timestamp = item.metadata.creation_timestamp.astimezone()
             age = now - creation_timestamp
-            statefulset['age'] = str(age - timedelta(microseconds=age.microseconds))
+            statefulset['age'] = str(
+                age - timedelta(microseconds=age.microseconds))
 
             statefulset['replicas'] = item.status.replicas
 
@@ -511,15 +573,16 @@ def list_namespaced_stateful_set(namespace):
                 images.append(container.image)
             statefulset['containers'] = containers
             statefulset['images'] = images
-            
+
             statefulset_list.append(statefulset)
     else:
         return None
-    
+
     return statefulset_list
 
-# job 리스트 조회 ----------------------------- https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/BatchV1Api.md
+
 def list_namespaced_job(namespace):
+    # job 리스트 조회 ----------------------------- https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/BatchV1Api.md
     job_list = list()
 
     try:
@@ -543,7 +606,8 @@ def list_namespaced_job(namespace):
             start_time = item.status.start_time.astimezone()
             completion_time = item.status.completion_time.astimezone()
             duration = completion_time - start_time
-            job['duration'] = str(duration - timedelta(microseconds=duration.microseconds))
+            job['duration'] = str(
+                duration - timedelta(microseconds=duration.microseconds))
 
             now = datetime.now().astimezone()
             creation_timestamp = item.metadata.creation_timestamp.astimezone()
@@ -574,8 +638,9 @@ def list_namespaced_job(namespace):
 
     return job_list
 
-# persistent_volume 리스트 조회
+
 def list_persistent_volume():
+    # persistent_volume 리스트 조회
     persistent_volume_list = list()
 
     try:
@@ -595,7 +660,7 @@ def list_persistent_volume():
             persistent_volume['access_modes'] = item.spec.access_modes
             persistent_volume['persistent_volume_reclaim_policy'] = item.spec.persistent_volume_reclaim_policy
             persistent_volume['status'] = item.status.phase
-            
+
             claim = ""
             claim = item.spec.claim_ref.namespace + '/' + item.spec.claim_ref.name
             persistent_volume['claim'] = claim
@@ -606,18 +671,20 @@ def list_persistent_volume():
             now = datetime.now().astimezone()
             creation_timestamp = item.metadata.creation_timestamp.astimezone()
             age = now - creation_timestamp
-            persistent_volume['age'] = str(age - timedelta(microseconds=age.microseconds))
-            
+            persistent_volume['age'] = str(
+                age - timedelta(microseconds=age.microseconds))
+
             persistent_volume['volume_mode'] = item.spec.volume_mode
 
             persistent_volume_list.append(persistent_volume)
     else:
         return None
-    
+
     return persistent_volume_list
 
-# persistent volume claim 리스트 조회
+
 def list_namespaced_persistent_volume_claim(namespace):
+    # persistent volume claim 리스트 조회
     persistent_volume_claim_list = list()
 
     try:
@@ -627,7 +694,7 @@ def list_namespaced_persistent_volume_claim(namespace):
             res = core_v1.list_persistent_volume_claim_for_all_namespaces()
         elif namespace is not None:
             res = core_v1.list_namespaced_persistent_volume_claim(namespace)
-  
+
     except ApiException as ex:
         Log.error(ex)
         return ex.reason, ex.status
@@ -646,8 +713,9 @@ def list_namespaced_persistent_volume_claim(namespace):
             now = datetime.now().astimezone()
             creation_timestamp = item.metadata.creation_timestamp.astimezone()
             age = now - creation_timestamp
-            persistent_volume_claim['age'] = str(age - timedelta(microseconds=age.microseconds))
-            
+            persistent_volume_claim['age'] = str(
+                age - timedelta(microseconds=age.microseconds))
+
             persistent_volume_claim['volume_mode'] = item.spec.volume_mode
 
             persistent_volume_claim_list.append(persistent_volume_claim)
@@ -655,10 +723,10 @@ def list_namespaced_persistent_volume_claim(namespace):
         return None
 
     return persistent_volume_claim_list
-    
 
-# storageclass 리스트 조회 -------------------- https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/StorageV1Api.md
+
 def list_storage_class():
+    # storageclass 리스트 조회 -------------------- https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/StorageV1Api.md
     storage_class_list = list()
 
     try:
@@ -681,8 +749,9 @@ def list_storage_class():
             now = datetime.now().astimezone()
             creation_timestamp = item.metadata.creation_timestamp.astimezone()
             age = now - creation_timestamp
-            storage_class['age'] = str(age - timedelta(microseconds=age.microseconds))
-            
+            storage_class['age'] = str(
+                age - timedelta(microseconds=age.microseconds))
+
             storage_class_list.append(storage_class)
     else:
         return None
@@ -690,6 +759,8 @@ def list_storage_class():
     return storage_class_list
 
 # service 리스트 조회
+
+
 def list_namespaced_service(namespace):
     service_list = list()
 
@@ -736,7 +807,8 @@ def list_namespaced_service(namespace):
             now = datetime.now().astimezone()
             creation_timestamp = item.metadata.creation_timestamp.astimezone()
             age = now - creation_timestamp
-            service['age'] = str(age - timedelta(microseconds=age.microseconds))
+            service['age'] = str(
+                age - timedelta(microseconds=age.microseconds))
 
             selector = ""
             if item.spec.selector is not None:
@@ -756,31 +828,30 @@ def list_namespaced_service(namespace):
     return service_list
 
 
-
-
-# 디플로이먼트 배포
 def create_deployment(namespace_name, deployment_name, image_name, replicas, containerPort):
+    # 디플로이먼트 배포
     if not get_deployment(namespace_name, deployment_name) is None:
         return "existed"
 
-    deployment_manifest = deployment_template(namespace_name, deployment_name, image_name, replicas, containerPort)
-    
+    deployment_manifest = deployment_template(
+        namespace_name, deployment_name, image_name, replicas, containerPort)
+
     ready = False
     count = 0
-    total_cnt = 10
+    total_cnt = 20
 
     try:
         load_k8s_config()
         core_apps_v1 = client.AppsV1Api()
         core_apps_v1.create_namespaced_deployment(
-            namespace = namespace_name,
-            body= deployment_manifest
+            namespace=namespace_name,
+            body=deployment_manifest
         )
 
     except ApiException as ex:
         Log.error(ex)
         return ex.reason, ex.status
-        
+
     while not ready:
         time.sleep(1)
 
@@ -792,13 +863,14 @@ def create_deployment(namespace_name, deployment_name, image_name, replicas, con
         if deployment is None:
             ready = False
         else:
-            ready = collect_deployment_ready_status(ready, deployment, deployment_name)
+            ready = collect_deployment_ready_status(
+                ready, deployment, deployment_name)
 
         Log.info(f'{deployment_name} is ready :: {ready}')
 
         if count >= total_cnt:
             break
-            
+
     if ready:
         Log.info("디플로이먼트 생성 완료")
         return "ok"
@@ -812,17 +884,18 @@ def get_deployment(namespace_name, deployment_name):
         deployment_list = core_apps_v1.list_namespaced_deployment(
             namespace_name
         )
-        
+
         for deployment in deployment_list.items:
-            if(deployment_name == deployment.metadata.name):
+            if (deployment_name == deployment.metadata.name):
                 if (deployment.metadata.deletion_timestamp is None
-                and deployment.status.unavailable_replicas is None):
+                        and deployment.status.unavailable_replicas is None):
                     return deployment
                 else:
                     return None
     except ApiException as ex:
         Log.error(ex)
-        return ex.reason, ex.status 
+        return ex.reason, ex.status
+
 
 def deployment_template(namespace_name, deployment_name, image_name, replicas, container_port):
     return {
@@ -837,7 +910,7 @@ def deployment_template(namespace_name, deployment_name, image_name, replicas, c
         },
         "spec": {
             "replicas": replicas,
-            "selector" : {
+            "selector": {
                 "matchLabels": {
                     "app": deployment_name
                 }
@@ -855,7 +928,7 @@ def deployment_template(namespace_name, deployment_name, image_name, replicas, c
                             "image": current_app.config['REPOS_IP'] + ":" + str(current_app.config['REPOS_PORT']) + "/" + image_name,
                             "ports": [
                                 {
-                                    "containerPort":container_port
+                                    "containerPort": container_port
                                 }
                             ],
                             "resources": {
@@ -874,17 +947,17 @@ def deployment_template(namespace_name, deployment_name, image_name, replicas, c
                         "nodeAffinity": {
                             "requiredDuringSchedulingIgnoredDuringExecution": {
                                 "nodeSelectorTerms": [
-                                {
-                                    "matchExpressions": [
-                                        {
-                                        "key": "kubernetes.io/arch",
-                                        "operator": "In",
-                                        "values": [
-                                            "amd64"
+                                    {
+                                        "matchExpressions": [
+                                            {
+                                                "key": "kubernetes.io/arch",
+                                                "operator": "In",
+                                                "values": [
+                                                    "amd64"
+                                                ]
+                                            }
                                         ]
-                                        }
-                                    ]
-                                }
+                                    }
                                 ]
                             }
                         }
@@ -894,11 +967,12 @@ def deployment_template(namespace_name, deployment_name, image_name, replicas, c
         }
     }
 
+
 def collect_deployment_ready_status(ready, deployment, deployment_name):
     if deployment.status is None:
         return False
-    
-    if(deployment_name == deployment.metadata.name):
+
+    if (deployment_name == deployment.metadata.name):
         replicas = deployment.status.replicas
         ready_replicas = deployment.status.ready_replicas
 
@@ -922,36 +996,36 @@ def create_service(service_name, namespace, service_type, selector, port, target
         load_k8s_config()
         core_v1 = client.CoreV1Api()
         service = client.V1Service(
-                api_version="v1",
-                kind="Service",
-                metadata=client.V1ObjectMeta(
-                    name=service_name,
-                    namespace=namespace
-                ),
-                spec=client.V1ServiceSpec(
-                    type=service_type,
-                    selector={selector.split("=")[0]: selector.split("=")[1]},
-                    ports=[client.V1ServicePort(
-                        port=port,
-                        target_port=target_port
-                    )]
-                )
+            api_version="v1",
+            kind="Service",
+            metadata=client.V1ObjectMeta(
+                name=service_name,
+                namespace=namespace
+            ),
+            spec=client.V1ServiceSpec(
+                type=service_type,
+                selector={selector.split("=")[0]: selector.split("=")[1]},
+                ports=[client.V1ServicePort(
+                    port=port,
+                    target_port=target_port
+                )]
             )
-        if service_type=='NodePort': 
+        )
+        if service_type == 'NodePort':
             if not node_port == 'none':
-                service.spec.ports[0].node_port = int(node_port)     
+                service.spec.ports[0].node_port = int(node_port)
 
-        core_v1.create_namespaced_service(namespace=namespace, body=service) 
-
+        core_v1.create_namespaced_service(namespace=namespace, body=service)
 
     except ApiException as ex:
         Log.error(ex)
         return ex.reason, ex.status
-    
+
     return "ok"
 
-# 특정 deployment 삭제  
+
 def delete_deployment_name(namespace_name, deployment_name):
+    # 특정 deployment 삭제
     try:
         load_k8s_config()
         core_v1 = client.AppsV1Api()
@@ -963,12 +1037,12 @@ def delete_deployment_name(namespace_name, deployment_name):
     except ApiException as ex:
         Log.error(ex)
         return ex.reason, ex.status
-    
+
     return "ok"
 
 
-# 특정 Service 삭제  
 def delete_service(namespace_name, service_name):
+    # 특정 Service 삭제
     try:
         load_k8s_config()
         core_v1 = client.CoreV1Api()
@@ -980,5 +1054,88 @@ def delete_service(namespace_name, service_name):
     except ApiException as ex:
         Log.error(ex)
         return ex.reason, ex.status
-    
+
+    return "ok"
+
+
+def list_namespaced_service_target(namespace):
+    # service생성 할 deployment, daemonset, replicaset 리스트 조회
+    target = {}
+
+    deployment_list = list()
+    if namespace is None:
+        deployment_list = list_namespaced_deployment(None)
+    elif namespace is not None:
+        deployment_list = list_namespaced_deployment(namespace)
+
+    daemonset_list = list()
+    if namespace is None:
+        daemonset_list = list_namespaced_daemon_set(None)
+    elif namespace is not None:
+        daemonset_list = list_namespaced_daemon_set(namespace)
+
+    statefulset_list = list()
+    if namespace is None:
+        statefulset_list = list_namespaced_stateful_set(None)
+    elif namespace is not None:
+        statefulset_list = list_namespaced_stateful_set(namespace)
+
+    target["deployment"] = deployment_list
+    target["daemonset"] = daemonset_list
+    target["statefulset"] = statefulset_list
+
+    return target
+
+
+def collect_deployment_ready_status(ready, deployment, deployment_name):
+    if deployment.status is None:
+        return False
+
+    if (deployment_name == deployment.metadata.name):
+        replicas = deployment.status.replicas
+        ready_replicas = deployment.status.ready_replicas
+
+        if replicas == ready_replicas:
+            ready = True
+        else:
+            ready = False
+
+        Log.info(
+            "{}\t\tReplicas:{}\t\tReady_replicas:{}".format(
+                deployment.metadata.name,
+                replicas,
+                ready_replicas
+            )
+        )
+        return ready
+
+
+def create_statefulset_service(service_name, namespace, selector, port, target_port):
+    try:
+        load_k8s_config()
+        core_v1 = client.CoreV1Api()
+        service = client.V1Service(
+            api_version="v1",
+            kind="Service",
+            metadata=client.V1ObjectMeta(
+                name=service_name,
+                namespace=namespace
+            ),
+            spec=client.V1ServiceSpec(
+                type="ClusterIP",
+                selector={selector.split("=")[0]: selector.split("=")[1]},
+                ports=[client.V1ServicePort(
+                    port=port,
+                    target_port=target_port
+                )],
+                cluster_ip="None"
+            )
+        )
+
+        core_v1.create_namespaced_service(namespace=namespace, body=service)
+
+    except ApiException as ex:
+        Log.error(ex)
+        return ex.reason, ex.status
+
     return "ok"

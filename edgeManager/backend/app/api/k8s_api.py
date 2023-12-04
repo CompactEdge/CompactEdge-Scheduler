@@ -265,3 +265,39 @@ class DeleteService(Resource):
         Log.info("Delete specific service in specific namespace")
        
         return k8s_service.delete_service(namespace, service_name)
+    
+
+# deployment, daemonset, statefulset 목록
+@ns.route("/service_target", methods=['GET'])
+@ns.param("namespace", "The kubernetes namespace name")
+@ns.doc("list kubernetes service target list")
+class ServiceTargetList(Resource):
+
+    def get(self):
+        """List Service target list"""
+        namespace = request.args.get('namespace')
+        Log.info("List Service target list")
+
+        return k8s_service.list_namespaced_service_target(namespace)
+    
+
+# statefulset service 생성
+@ns.route("/service/statefulset/<string:namespace>/<string:service_name>/<string:selector>/<int:port>/<int:target_port>", methods=['POST'])
+@ns.param("namespace", "The kubernetes namespace name")
+@ns.param("service_name", "The kubernetes service name")
+@ns.param("selector", "The kubernetes service selector")
+@ns.param("port", "The kubernetes service port")
+@ns.param("target_port", "The kubernetes service target port")
+@ns.doc("Create statefulset service")
+class CreateStatefulsetService(Resource):
+    def post(self, service_name, namespace, selector, port, target_port):
+        """Create statefulset service"""
+        res = k8s_service.create_statefulset_service(service_name, namespace, selector, port, target_port)
+
+        if res == "error":
+            abort(500)
+        elif res == "existed":
+            return "Already existed"
+        else:
+            Log.info("Creat statefulset service")
+            return res
