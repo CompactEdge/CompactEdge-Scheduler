@@ -1,27 +1,15 @@
-import MDBox from 'components/MDBox';
-import React from 'react';
-import { grey } from '@mui/material/colors';
+import MDBox from "components/MDBox";
+import React from "react";
+import { grey } from "@mui/material/colors";
 
-function HoverBox({
-  type,
-  provided,
-  item,
-  index,
-  snapshot,
-  mainColor,
-  hoverColor,
-  width,
-}) {
+function HoverBox({ type, provided, item, index, snapshot, mainColor, hoverColor, width }) {
   const [isHovering, setIsHovering] = React.useState();
   const keyColor = grey[500];
-  snapshot.isHover = isHovering
+  snapshot.isHover = isHovering;
 
   function ContentBoxStyle({ cKey, cVal }) {
     return (
-      <MDBox
-        display="flex"
-        mr={1}
-      >
+      <MDBox display="flex" mr={1}>
         <MDBox
           mr={0.5}
           mt={0.5}
@@ -36,7 +24,7 @@ function HoverBox({
         <MDBox
           fontSize="14px"
           fontWeight="500"
-          textTransform="capitalize"
+          textTransform="none"
           style={{
             color: mainColor,
           }}
@@ -46,7 +34,7 @@ function HoverBox({
         </MDBox>
       </MDBox>
     );
-  };
+  }
 
   const getContent = (item) => {
     if (type === "image") {
@@ -54,7 +42,7 @@ function HoverBox({
         <MDBox
           fontSize="14px"
           fontWeight="500"
-          textTransform="capitalize"
+          textTransform="none"
           style={{
             color: mainColor,
           }}
@@ -88,7 +76,7 @@ function HoverBox({
         border: "1px solid",
         borderColor: mainColor,
         backgroundColor: snapshot.isDragging || snapshot.isHover ? hoverColor : "#fff",
-        ...provided.draggableProps.style
+        ...provided.draggableProps.style,
       }}
       onMouseOver={() => setIsHovering(true)}
       onMouseOut={() => setIsHovering(false)}

@@ -1,10 +1,6 @@
 import React from "react";
-import {
-  Grid,
-  Autocomplete,
-  TextField,
-} from "@mui/material";
-import { blue, orange, indigo } from '@mui/material/colors';
+import { Grid, Autocomplete, TextField } from "@mui/material";
+import { blue, orange, indigo } from "@mui/material/colors";
 import CustomComplexProjectCard from "views/Components/CustomComplexProjectCard";
 import DialogComp from "views/Components/DialogComp/DialogComp";
 import Progress from "views/Components/Progress/Progress";
@@ -61,9 +57,7 @@ function CreatePod(props) {
 
   const dispatch = useDispatch();
 
-  React.useEffect(() => {
-    console.log("state: ", state);
-  }, [state]);
+  React.useEffect(() => {}, [state]);
 
   React.useEffect(() => {
     let stateTmp = {};
@@ -76,7 +70,6 @@ function CreatePod(props) {
         });
       });
       stateTmp = { images: imagesTmp };
-
       setState(stateTmp);
     });
     axios("/rest/1.0/k8s/namespace").then((res) => {
@@ -97,14 +90,16 @@ function CreatePod(props) {
           if (node.node_role === "master") {
             masterNodeTmp.push(node.name);
           } else {
-            nodesTmp.push(node.name);
+            nodesTmp.push({
+              name: node.name,
+              logo: "/public_assets/images/logos/" + node.node_type + "_logo.png",
+            });
           }
         });
       }
       setMasterNode(masterNodeTmp);
 
-      const selectNsTmp =
-        selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
+      const selectNsTmp = selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
 
       axios(`/rest/1.0/k8s/pod?namespace=${selectNsTmp}`).then((res) => {
         let podsTmp = [];
@@ -117,12 +112,13 @@ function CreatePod(props) {
             });
           });
           nodesTmp.map((node) => {
-            stateTmp[node] = podsTmp.filter((pod) => {
-              return pod.node_name === node;
+            stateTmp[node.name] = podsTmp.filter((pod) => {
+              return pod.node_name === node.name;
             });
           });
           stateTmp["nodes"] = nodesTmp;
         }
+
         setState(stateTmp);
       });
     });
@@ -142,8 +138,7 @@ function CreatePod(props) {
       });
       stateTmp["images"] = imagesTmp;
 
-      const selectNsTmp =
-        selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
+      const selectNsTmp = selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
 
       axios(`/rest/1.0/k8s/node`).then((res) => {
         let masterNodeTmp = [];
@@ -153,7 +148,10 @@ function CreatePod(props) {
             if (node.node_role === "master") {
               masterNodeTmp.push(node.name);
             } else {
-              nodesTmp.push(node.name);
+              nodesTmp.push({
+                name: node.name,
+                logo: "/public_assets/images/logos/" + node.node_type + "_logo.png",
+              });
             }
           });
         }
@@ -170,13 +168,12 @@ function CreatePod(props) {
               });
             });
             nodesTmp.map((node) => {
-              stateTmp[node] = podsTmp.filter((pod) => {
-                return pod.node_name === node;
+              stateTmp[node.name] = podsTmp.filter((pod) => {
+                return pod.node_name === node.name;
               });
             });
             stateTmp["nodes"] = nodesTmp;
           }
-          // console.log("stateTmp: ", stateTmp);
           setState(stateTmp);
         });
       });
@@ -184,10 +181,7 @@ function CreatePod(props) {
   }, [selectNamespace]);
 
   const onDragEnd = (result) => {
-    console.log("result: ", result);
     const { source, destination } = result;
-    // console.log("source: ", source);
-    // console.log("destination: ", destination);
     setSourceData(source);
     setDestinationData(destination);
     setImageName(state["images"][source.index]?.content);
@@ -209,11 +203,7 @@ function CreatePod(props) {
     } else {
     }
     if (source.droppableId === destination.droppableId) {
-      const reorderResult = reorder(
-        state[source.droppableId],
-        source.index,
-        destination.index
-      );
+      const reorderResult = reorder(state[source.droppableId], source.index, destination.index);
 
       let result = _.cloneDeep(state);
 
@@ -245,7 +235,11 @@ function CreatePod(props) {
     setIsLoading(true);
     dispatch(onLoad());
     axios
-      .delete(`/rest/1.0/k8s/pod/${selectNamespace}/${state[sourceData.droppableId][sourceData.index]["content"]}`)
+      .delete(
+        `/rest/1.0/k8s/pod/${selectNamespace}/${
+          state[sourceData.droppableId][sourceData.index]["content"]
+        }`
+      )
       .then((res) => {
         if (res.data === "ok") {
           setIsLoading(false);
@@ -253,62 +247,60 @@ function CreatePod(props) {
           // alert("삭제가 완료됐습니다.");
           setModalState("delete");
           setModalAlert(true);
-        };
+        }
 
         let stateTmp = {};
-        axios("/rest/1.0/repos/tags")
-          .then((res) => {
-            let imagesTmp = [];
-            res.data.map((data, idx) => {
-              imagesTmp.push({
-                id: `${data.name}-${idx}`,
-                content: `${data.name}:${data.tags[0]}`,
-              });
+        axios("/rest/1.0/repos/tags").then((res) => {
+          let imagesTmp = [];
+          res.data.map((data, idx) => {
+            imagesTmp.push({
+              id: `${data.name}-${idx}`,
+              content: `${data.name}:${data.tags[0]}`,
             });
-            stateTmp["images"] = imagesTmp;
+          });
+          stateTmp["images"] = imagesTmp;
 
-            const selectNsTmp =
-              selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
+          const selectNsTmp = selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
 
-            axios(`/rest/1.0/k8s/node`)
-              .then((res) => {
-                let masterNodeTmp = [];
-                let nodesTmp = [];
-                if (res.data.length > 0) {
-                  res.data.map((node) => {
-                    if (node.node_role === "master") {
-                      masterNodeTmp.push(node.name);
-                    } else {
-                      nodesTmp.push(node.name);
-                    }
+          axios(`/rest/1.0/k8s/node`).then((res) => {
+            let masterNodeTmp = [];
+            let nodesTmp = [];
+            if (res.data.length > 0) {
+              res.data.map((node) => {
+                if (node.node_role === "master") {
+                  masterNodeTmp.push(node.name);
+                } else {
+                  nodesTmp.push({
+                    name: node.name,
+                    logo: "/public_assets/images/logos/" + node.node_type + "_logo.png",
                   });
                 }
-                setMasterNode(masterNodeTmp);
-
-                axios(`/rest/1.0/k8s/pod?namespace=${selectNsTmp}`)
-                  .then((res) => {
-                    let podsTmp = [];
-                    if (res.data) {
-                      res.data.map((podsData, idx) => {
-                        podsTmp.push({
-                          id: `${podsData.pod_name}-${idx}`,
-                          content: podsData.pod_name,
-                          node_name: podsData.node_name,
-                        });
-                      });
-                      nodesTmp.map((node) => {
-                        stateTmp[node] = podsTmp.filter((pod) => {
-                          return pod.node_name === node;
-                        });
-                      });
-                      stateTmp["nodes"] = nodesTmp;
-                    }
-                    setState(stateTmp);
-                    dispatch(offLoad());
-                  }
-                  );
               });
+            }
+            setMasterNode(masterNodeTmp);
+
+            axios(`/rest/1.0/k8s/pod?namespace=${selectNsTmp}`).then((res) => {
+              let podsTmp = [];
+              if (res.data) {
+                res.data.map((podsData, idx) => {
+                  podsTmp.push({
+                    id: `${podsData.pod_name}-${idx}`,
+                    content: podsData.pod_name,
+                    node_name: podsData.node_name,
+                  });
+                });
+                nodesTmp.map((node) => {
+                  stateTmp[node.name] = podsTmp.filter((pod) => {
+                    return pod.node_name === node.name;
+                  });
+                });
+                stateTmp["nodes"] = nodesTmp;
+              }
+              setState(stateTmp);
+              dispatch(offLoad());
+            });
           });
+        });
       })
       .catch((err) => {
         setIsLoading(false);
@@ -336,7 +328,9 @@ function CreatePod(props) {
       console.log("pod_name", inputName);
       axios
         .post(
-          `/rest/1.0/k8s/pod/${selectNamespace}/${destinationData.droppableId}/${state[sourceData.droppableId][sourceData.index]["content"]}/${inputName}`
+          `/rest/1.0/k8s/pod/${selectNamespace}/${destinationData.droppableId}/${
+            state[sourceData.droppableId][sourceData.index]["content"]
+          }/${inputName}`
         )
         .then((res) => {
           if (res.data === "ok") {
@@ -348,9 +342,9 @@ function CreatePod(props) {
           }
 
           let stateTmp = {};
-          axios("/rest/1.0/repos/tags").then((res1) => {
+          axios("/rest/1.0/repos/tags").then((res) => {
             let imagesTmp = [];
-            res1.data.map((data, idx) => {
+            res.data.map((data, idx) => {
               imagesTmp.push({
                 id: `${data.name}-${idx}`,
                 content: `${data.name}:${data.tags[0]}`,
@@ -358,10 +352,7 @@ function CreatePod(props) {
             });
             stateTmp["images"] = imagesTmp;
 
-            const selectNsTmp =
-              selectNamespace === "all"
-                ? ""
-                : _.cloneDeep(selectNamespace);
+            const selectNsTmp = selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
 
             axios(`/rest/1.0/k8s/node`).then((res) => {
               let masterNodeTmp = [];
@@ -371,36 +362,38 @@ function CreatePod(props) {
                   if (node.node_role === "master") {
                     masterNodeTmp.push(node.name);
                   } else {
-                    nodesTmp.push(node.name);
+                    nodesTmp.push({
+                      name: node.name,
+                      logo: "/public_assets/images/logos/" + node.node_type + "_logo.png",
+                    });
                   }
                 });
               }
               setMasterNode(masterNodeTmp);
 
-              axios(`/rest/1.0/k8s/pod?namespace=${selectNsTmp}`).then(
-                (res) => {
-                  let podsTmp = [];
-                  if (res.data) {
-                    res.data.map((podsData, idx) => {
-                      podsTmp.push({
-                        id: `${podsData.pod_name}-${idx}`,
-                        content: podsData.pod_name,
-                        node_name: podsData.node_name,
-                      });
+              axios(`/rest/1.0/k8s/pod?namespace=${selectNsTmp}`).then((res) => {
+                let podsTmp = [];
+                if (res.data) {
+                  res.data.map((podsData, idx) => {
+                    podsTmp.push({
+                      id: `${podsData.pod_name}-${idx}`,
+                      content: podsData.pod_name,
+                      node_name: podsData.node_name,
                     });
-                    nodesTmp.map((node) => {
-                      stateTmp[node] = podsTmp.filter((pod) => {
-                        return pod.node_name === node;
-                      });
+                  });
+                  nodesTmp.map((node) => {
+                    stateTmp[node.name] = podsTmp.filter((pod) => {
+                      return pod.node_name === node.name;
                     });
-                    stateTmp["nodes"] = nodesTmp;
-                  }
-                  setState(stateTmp);
-                  dispatch(offLoad());
-                  setModalCreate(false);
-                  setInputName();
+                  });
+
+                  stateTmp["nodes"] = nodesTmp;
                 }
-              );
+                setState(stateTmp);
+                dispatch(offLoad());
+                setModalCreate(false);
+                setInputName();
+              });
             });
           });
         })
@@ -422,7 +415,8 @@ function CreatePod(props) {
       <DragDropContext onDragEnd={onDragEnd}>
         <CustomComplexProjectCard title={"KUBERNETES"} image={LogoKubernetes}>
           <MDBox mt={5}>
-            <Grid container
+            <Grid
+              container
               display="flex"
               justifyContent="space-between"
               // alignItems="center"
@@ -436,32 +430,31 @@ function CreatePod(props) {
                 </MDBox>
                 {masterNode.length > 0
                   ? masterNode.map((msNode, idx) => {
-                    return (
-                      <div
-                        key={`${msNode}-${idx}`}
-                        style={{
-                          borderRadius: 5,
-                          border: "1px solid lightgrey",
-                          padding: 8,
-                          width: "350px",
-                        }}
-                      >
-                        <MDBox
+                      return (
+                        <div
+                          key={`${msNode}-${idx}`}
+                          style={{
+                            borderRadius: 5,
+                            border: "1px solid lightgrey",
+                            padding: 8,
+                            width: "350px",
+                          }}
                         >
-                          <MDBadge size="xs" color="success" badgeContent={"Node Name"} container sx={{ height: "100%" }} />
-                          <MDBox
-                            mt={-0.5}
-                            ml={0.5}
-                            fontSize="20px"
-                            fontWeight="100"
-                          >
-                            {msNode}
+                          <MDBox>
+                            <MDBadge
+                              size="xs"
+                              color="success"
+                              badgeContent={"Node Name"}
+                              container
+                              sx={{ height: "100%" }}
+                            />
+                            <MDBox mt={-0.5} ml={0.5} fontSize="20px" fontWeight="100">
+                              {msNode}
+                            </MDBox>
                           </MDBox>
-                        </MDBox>
-                      </div>
-
-                    );
-                  })
+                        </div>
+                      );
+                    })
                   : null}
               </Grid>
               <Grid item>
@@ -497,69 +490,85 @@ function CreatePod(props) {
             <Grid container spacing={5}>
               {state["nodes"]
                 ? state["nodes"].map((node, idx) => {
-                  return (
-                    <Droppable droppableId={node} key={`${node}-${idx}`}>
-                      {(provided, snapshot) => (
-                        <Grid item>
-                          <div
-                            ref={provided.innerRef}
-                          >
-                            <div
-                              key={`${node}-${idx}`}
-                              style={{
-                                borderRadius: 5,
-                                border: "1px solid lightgrey",
-                                padding: 8,
-                                width: "350px",
-                                height: "380px",
-                              }}
-                            >
-                              <MDBox mb={1}>
-                                <MDBadge size="xs" color="success" badgeContent={"Node Name"} container />
-                                <MDBox
-                                  mt={-0.5}
-                                  ml={0.5}
-                                  fontSize="20px"
-                                  fontWeight="100"
-                                >
-                                  {node}
+                    return (
+                      <Droppable key={`${node.name}-${idx}`} droppableId={node.name}>
+                        {(provided, snapshot) => (
+                          <Grid item>
+                            <div ref={provided.innerRef}>
+                              <div
+                                key={`${node.name}-${idx}`}
+                                style={{
+                                  borderRadius: 5,
+                                  border: "1px solid lightgrey",
+                                  padding: 8,
+                                  width: "350px",
+                                  height: "380px",
+                                }}
+                              >
+                                <MDBox mb={1}>
+                                  <MDBox mt={-1}>
+                                    <MDBadge
+                                      size="xs"
+                                      color="success"
+                                      badgeContent={"Node Name"}
+                                      container
+                                    />
+                                    {node.logo ===
+                                    "/public_assets/images/logos/onpremise_logo.png" ? (
+                                      ""
+                                    ) : (
+                                      <img
+                                        src={node.logo}
+                                        alt=""
+                                        width="60px"
+                                        height="40px"
+                                        align="right"
+                                        style={{ marginTop: "5.6px" }}
+                                      />
+                                    )}
+                                  </MDBox>
+                                  <MDBox mt={-0.5} ml={0.5} fontSize="20px" fontWeight="100">
+                                    {node.name}
+                                  </MDBox>
                                 </MDBox>
-                              </MDBox>
-                              <MDBadge size="xs" color="info" badgeContent={"Pod List"} container />
-                              <div style={{ overflowY: "auto", height: "255px" }}>
-                                {state[node]
-                                  ? state[node].map((item, index) => (
-                                    <Draggable
-                                      key={item.id}
-                                      draggableId={item.id}
-                                      index={index}
-                                    >
-                                      {(provided, snapshot) => {
-                                        // console.log("snapshot:", snapshot)
-                                        // console.log("provided:", provided)
-                                        return (
-                                          <HoverBox
-                                            provided={provided}
-                                            item={item}
-                                            index={index}
-                                            snapshot={snapshot}
-                                            mainColor={blue[800]}
-                                            hoverColor={indigo[50]}
-                                          />
-                                        )
-                                      }}
-                                    </Draggable>
-                                  ))
-                                  : null}
-                                {provided.placeholder}
+                                <MDBadge
+                                  size="xs"
+                                  color="info"
+                                  badgeContent={"Pod List"}
+                                  container
+                                />
+                                <div style={{ overflowY: "auto", height: "255px" }}>
+                                  {state[node.name]
+                                    ? state[node.name].map((item, index) => (
+                                        <Draggable
+                                          key={item.id}
+                                          draggableId={item.id}
+                                          index={index}
+                                        >
+                                          {(provided, snapshot) => {
+                                            return (
+                                              <HoverBox
+                                                provided={provided}
+                                                item={item}
+                                                index={index}
+                                                snapshot={snapshot}
+                                                mainColor={blue[800]}
+                                                hoverColor={indigo[50]}
+                                              />
+                                            );
+                                          }}
+                                        </Draggable>
+                                      ))
+                                    : null}
+                                  {provided.placeholder}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </Grid>
-                      )}
-                    </Droppable>
-                  );
-                })
+                          </Grid>
+                        )}
+                      </Droppable>
+                    );
+                  })
                 : null}
             </Grid>
           </MDBox>
@@ -574,9 +583,7 @@ function CreatePod(props) {
             </MDBox>
             <Droppable droppableId="images" direction="horizontal">
               {(provided, snapshot) => (
-                <div
-                  ref={provided.innerRef}
-                >
+                <div ref={provided.innerRef}>
                   <div
                     style={{
                       borderRadius: 5,
@@ -588,7 +595,8 @@ function CreatePod(props) {
                     <MDBox>
                       <MDBadge size="xs" color="warning" badgeContent={"Image List"} container />
                     </MDBox>
-                    <Grid container
+                    <Grid
+                      container
                       spacing={1}
                       display="flex"
                       justifyContent="flex-start"
@@ -596,26 +604,22 @@ function CreatePod(props) {
                     >
                       {state["images"]
                         ? state["images"].map((item, index) => (
-                          <Draggable
-                            key={item.id}
-                            draggableId={item.id}
-                            index={index}
-                          >
-                            {(provided, snapshot) => (
-                              <Grid item>
-                                <HoverBox
-                                  width="350px"
-                                  provided={provided}
-                                  item={item}
-                                  index={index}
-                                  snapshot={snapshot}
-                                  mainColor={orange[700]}
-                                  hoverColor={orange[50]}
-                                />
-                              </Grid>
-                            )}
-                          </Draggable>
-                        ))
+                            <Draggable key={item.id} draggableId={item.id} index={index}>
+                              {(provided, snapshot) => (
+                                <Grid item>
+                                  <HoverBox
+                                    width="350px"
+                                    provided={provided}
+                                    item={item}
+                                    index={index}
+                                    snapshot={snapshot}
+                                    mainColor={orange[700]}
+                                    hoverColor={orange[50]}
+                                  />
+                                </Grid>
+                              )}
+                            </Draggable>
+                          ))
                         : null}
                       {provided.placeholder}
                     </Grid>
@@ -623,7 +627,6 @@ function CreatePod(props) {
                 </div>
               )}
             </Droppable>
-
           </MDBox>
         </CustomComplexProjectCard>
       </DragDropContext>

@@ -1,37 +1,37 @@
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import EdgeMonitoring from "views/Monitoring/EdgeMonitoring/EdgeMonitoring";
-import ClusterMonitoring from "views/Monitoring/ClusterMonitoring/ClusterMonitoring";
-import NodeMonitoring from "views/Monitoring/NodeMonitoring/NodeMonitoring";
-import PodMonitoring from "views/Monitoring/PodMonitoring/PodMonitoring";
-import ControllerMonitoring from "views/Monitoring/ControllerMonitoring/ControllerMonitoring";
-import StorageMonitoring from "views/Monitoring/StorageMonitoring/StorageMonitoring";
-import ServiceMonitoring from "views/Monitoring/ServiceMonitoring/ServiceMonitoring";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import BigCrawlerManagement from "views/Management/BigCrawlerManagement/BigCrawlerManagement";
 import CreateDeployment from "views/Management/CreateDeployment/CreateDeployment";
+import CreateNode from "views/Management/CreateNode/CreateNode";
 import CreatePod from "views/Management/CreatePod/CreatePod";
 import CreateService from "views/Management/CreateService/CreateService";
-import BigCrawlerManagement from "views/Management/BigCrawlerManagement/BigCrawlerManagement";
-import RabbitmqMonitoring from 'views/Monitoring/RabbitmqMonitoring/RabbitmqMonitoring';
+import ClusterMonitoring from "views/Monitoring/ClusterMonitoring/ClusterMonitoring";
+import ControllerMonitoring from "views/Monitoring/ControllerMonitoring/ControllerMonitoring";
+import EdgeMonitoring from "views/Monitoring/EdgeMonitoring/EdgeMonitoring";
+import NodeMonitoring from "views/Monitoring/NodeMonitoring/NodeMonitoring";
+import PodMonitoring from "views/Monitoring/PodMonitoring/PodMonitoring";
+import RabbitmqMonitoring from "views/Monitoring/RabbitmqMonitoring/RabbitmqMonitoring";
+import ServiceMonitoring from "views/Monitoring/ServiceMonitoring/ServiceMonitoring";
+import StorageMonitoring from "views/Monitoring/StorageMonitoring/StorageMonitoring";
 
 const routesEdge = [
-  { type: "title", title: "Monitoring", key: "title-monitoring" },
   {
     type: "collapse",
     name: "Monitoring",
     key: "monitoring",
-    icon: <DashboardIcon/>,
+    icon: <DashboardIcon />,
     collapse: [
       {
         name: "EdgeMonitoring",
         key: "edgeMonitoring",
         route: "/views/monitoring/edgeMonitoring",
-        component: <EdgeMonitoring/>,
+        component: <EdgeMonitoring />,
         layout: "/admin",
       },
       {
         name: "ClusterMonitoring",
         key: "clusterMonitoring",
         route: "/views/monitoring/clusterMonitoring",
-        component: <ClusterMonitoring/>,
+        component: <ClusterMonitoring />,
         layout: "/admin",
       },
       {
@@ -39,7 +39,7 @@ const routesEdge = [
         key: "nodeMonitoring",
         layout: "/admin",
         route: "/views/monitoring/nodeMonitoring",
-        component: <NodeMonitoring/>,
+        component: <NodeMonitoring />,
       },
       {
         type: "collapse",
@@ -55,7 +55,7 @@ const routesEdge = [
         name: "ControllerMonitoring",
         key: "controllerMonitoring",
         route: "/views/monitoring/controllerMonitoring",
-        component: <ControllerMonitoring/>,
+        component: <ControllerMonitoring />,
         noCollapse: true,
         layout: "/admin",
       },
@@ -92,14 +92,14 @@ const routesEdge = [
     type: "collapse",
     name: "Management",
     key: "management",
-    icon: <DashboardIcon/>,
+    icon: <DashboardIcon />,
     collapse: [
       {
         type: "collapse",
         name: "CreatePod",
         key: "createPod",
         route: "/views/management/createPod",
-        component: <CreatePod/>,
+        component: <CreatePod />,
         noCollapse: true,
         layout: "/admin",
       },
@@ -108,7 +108,7 @@ const routesEdge = [
         name: "CreateDeployment",
         key: "createDeployment",
         route: "/views/management/createDeployment",
-        component: <CreateDeployment/>,
+        component: <CreateDeployment />,
         noCollapse: true,
         layout: "/admin",
       },
@@ -117,7 +117,16 @@ const routesEdge = [
         name: "CreateService",
         key: "createService",
         route: "/views/management/createService",
-        component: <CreateService/>,
+        component: <CreateService />,
+        noCollapse: true,
+        layout: "/admin",
+      },
+      {
+        type: "collapse",
+        name: "CreateNode",
+        key: "createNode",
+        route: "/views/management/createNode",
+        component: <CreateNode />,
         noCollapse: true,
         layout: "/admin",
       },
@@ -126,7 +135,7 @@ const routesEdge = [
         name: "BigCrawler",
         key: "bigCrawler",
         route: "/views/management/bigCrawler",
-        component: <BigCrawlerManagement/>,
+        component: <BigCrawlerManagement />,
         noCollapse: true,
         layout: "/admin",
       },

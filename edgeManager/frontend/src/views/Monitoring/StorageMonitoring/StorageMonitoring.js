@@ -1,25 +1,20 @@
-import React, { useEffect, useState } from "react";
 import {
-  Tabs,
-  Tab,
   Box,
   Card,
   Dialog,
   DialogActions,
   DialogContent,
-  DialogTitle,
+  DialogTitle, Tab, Tabs
 } from "@mui/material";
-// import TabPanel from '@mui/lab/TabPanel';
-import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "../../Components/DashboardNavbar";
-import MDBox from "components/MDBox";
-import breakpoints from "assets/theme/base/breakpoints";
-import CustomDataTable from "../../Components/DataTable/CustomDataTable";
-import CustomIdCell from "../../Components/DataTable/CustomIdCell";
-import axios from "axios";
 import { grey } from "@mui/material/colors";
+import breakpoints from "assets/theme/base/breakpoints";
+import axios from "axios";
+import MDBox from "components/MDBox";
 import MDButton from "components/MDButton";
-import ModalData from "../../Components/DetailModalComp/DetailModalComp";
+import React, { useEffect, useState } from "react";
+import CustomDataTable from "views/Components/DataTable/CustomDataTable";
+import CustomIdCell from "views/Components/DataTable/CustomIdCell";
+import ModalData from "views/Components/DetailModalComp/DetailModalComp";
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;

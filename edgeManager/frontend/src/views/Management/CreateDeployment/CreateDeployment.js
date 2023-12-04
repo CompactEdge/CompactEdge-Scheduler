@@ -1,10 +1,6 @@
 import React from "react";
-import {
-  Grid,
-  Autocomplete,
-  TextField,
-} from "@mui/material";
-import { blue, orange, indigo } from '@mui/material/colors';
+import { Grid, Autocomplete, TextField } from "@mui/material";
+import { blue, orange, indigo } from "@mui/material/colors";
 import CustomComplexProjectCard from "views/Components/CustomComplexProjectCard";
 import DialogComp from "views/Components/DialogComp/DialogComp";
 import Progress from "views/Components/Progress/Progress";
@@ -52,7 +48,6 @@ function CreateDeployment(props) {
   const [isLoading, setIsLoading] = React.useState(false);
 
   const [deploymentList, setDeploymentList] = React.useState([]);
-
 
   const reorder = (list, startIndex, endIndex) => {
     const result = list;
@@ -120,14 +115,12 @@ function CreateDeployment(props) {
       stateTmp["images"] = imagesTmp;
       setState(stateTmp);
 
-      const selectNsTmp =
-        selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
+      const selectNsTmp = selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
 
       axios(`/rest/1.0/k8s/deployment?namespace=${selectNsTmp}`).then((res) => {
         // console.log("dpList: ", res.data);
         setDeploymentList(res.data);
       });
-      
     });
   }, [selectNamespace]);
 
@@ -142,7 +135,7 @@ function CreateDeployment(props) {
     setSelectedName(draggableId);
     if (state["images"][source.index]?.content) {
       setImageName(state["images"][source.index]?.content);
-    };
+    }
 
     // dropped outside the list
     if (!destination) {
@@ -160,7 +153,9 @@ function CreateDeployment(props) {
     }
     if (source.droppableId === destination.droppableId) {
       const reorderResult = reorder(
-        destination.droppableId === "images" ? Array.from(state[source.droppableId]) : deploymentList,
+        destination.droppableId === "images"
+          ? Array.from(state[source.droppableId])
+          : deploymentList,
         source.index,
         destination.index
       );
@@ -204,7 +199,7 @@ function CreateDeployment(props) {
           setModalAlert(true);
         } else {
           alert("삭제에 실패했습니다.");
-        };
+        }
 
         let stateTmp = {};
         axios("/rest/1.0/repos/tags").then((res) => {
@@ -218,8 +213,7 @@ function CreateDeployment(props) {
           stateTmp["images"] = imagesTmp;
           setState(stateTmp);
 
-          const selectNsTmp =
-            selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
+          const selectNsTmp = selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
 
           axios(`/rest/1.0/k8s/deployment?namespace=${selectNsTmp}`).then((res) => {
             // console.log("dpList: ", res.data);
@@ -251,7 +245,11 @@ function CreateDeployment(props) {
       // console.log("replicas", inputReplicas);
       // console.log("containerPort", inputPort);
       axios
-        .post(`/rest/1.0/k8s/deployment/${selectNamespace}/${state[sourceData.droppableId][sourceData.index]["content"]}/${inputName}/${inputReplicas}/${inputPort}`)
+        .post(
+          `/rest/1.0/k8s/deployment/${selectNamespace}/${
+            state[sourceData.droppableId][sourceData.index]["content"]
+          }/${inputName}/${inputReplicas}/${inputPort}`
+        )
         .then((res) => {
           if (res.data === "ok") {
             // alert("배포가 완료됐습니다.");
@@ -272,10 +270,9 @@ function CreateDeployment(props) {
             });
             stateTmp["images"] = imagesTmp;
             setState(stateTmp);
-  
-            const selectNsTmp =
-              selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
-  
+
+            const selectNsTmp = selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
+
             axios(`/rest/1.0/k8s/deployment?namespace=${selectNsTmp}`).then((res) => {
               // console.log("dpList: ", res.data);
               setDeploymentList(res.data);
@@ -314,9 +311,7 @@ function CreateDeployment(props) {
                 <Droppable droppableId="deployement">
                   {(provided, snapshot) => (
                     <Grid item xs={12}>
-                      <div
-                        ref={provided.innerRef}
-                      >
+                      <div ref={provided.innerRef}>
                         <div
                           style={{
                             borderRadius: 5,
@@ -326,32 +321,33 @@ function CreateDeployment(props) {
                             height: "380px",
                           }}
                         >
-                          <MDBadge size="xs" color="info" badgeContent={"Deployment List"} container />
+                          <MDBadge
+                            size="xs"
+                            color="info"
+                            badgeContent={"Deployment List"}
+                            container
+                          />
                           <div style={{ overflowY: "auto", height: "320px" }}>
                             {deploymentList
                               ? deploymentList.map((item, index) => (
-                                <Draggable
-                                  key={item.name}
-                                  draggableId={item.name}
-                                  index={index}
-                                >
-                                  {(provided, snapshot) => {
-                                    // console.log("snapshot:", snapshot)
-                                    // console.log("provided:", provided)
-                                    return (
-                                      <HoverBox
-                                        type="deployment"
-                                        provided={provided}
-                                        item={item}
-                                        index={index}
-                                        snapshot={snapshot}
-                                        mainColor={blue[800]}
-                                        hoverColor={indigo[50]}
-                                      />
-                                    )
-                                  }}
-                                </Draggable>
-                              ))
+                                  <Draggable key={item.name} draggableId={item.name} index={index}>
+                                    {(provided, snapshot) => {
+                                      // console.log("snapshot:", snapshot)
+                                      // console.log("provided:", provided)
+                                      return (
+                                        <HoverBox
+                                          type="deployment"
+                                          provided={provided}
+                                          item={item}
+                                          index={index}
+                                          snapshot={snapshot}
+                                          mainColor={blue[800]}
+                                          hoverColor={indigo[50]}
+                                        />
+                                      );
+                                    }}
+                                  </Draggable>
+                                ))
                               : null}
                             {provided.placeholder}
                           </div>
@@ -363,7 +359,8 @@ function CreateDeployment(props) {
               </Grid>
             </Grid>
             <Grid item mt={5} xs={12} lg={3}>
-              <Grid container
+              <Grid
+                container
                 sx={{
                   display: "flex",
                   justifyContent: "flex-end",
@@ -404,9 +401,7 @@ function CreateDeployment(props) {
             </MDBox>
             <Droppable droppableId="images" direction="horizontal">
               {(provided, snapshot) => (
-                <div
-                  ref={provided.innerRef}
-                >
+                <div ref={provided.innerRef}>
                   <div
                     style={{
                       borderRadius: 5,
@@ -418,7 +413,8 @@ function CreateDeployment(props) {
                     <MDBox>
                       <MDBadge size="xs" color="warning" badgeContent={"Image List"} container />
                     </MDBox>
-                    <Grid container
+                    <Grid
+                      container
                       spacing={1}
                       display="flex"
                       justifyContent="flex-start"
@@ -426,27 +422,23 @@ function CreateDeployment(props) {
                     >
                       {state["images"]
                         ? state["images"].map((item, index) => (
-                          <Draggable
-                            key={item.id}
-                            draggableId={item.id}
-                            index={index}
-                          >
-                            {(provided, snapshot) => (
-                              <Grid item>
-                                <HoverBox
-                                  type="image"
-                                  width="350px"
-                                  provided={provided}
-                                  item={item}
-                                  index={index}
-                                  snapshot={snapshot}
-                                  mainColor={orange[700]}
-                                  hoverColor={orange[50]}
-                                />
-                              </Grid>
-                            )}
-                          </Draggable>
-                        ))
+                            <Draggable key={item.id} draggableId={item.id} index={index}>
+                              {(provided, snapshot) => (
+                                <Grid item>
+                                  <HoverBox
+                                    type="image"
+                                    width="350px"
+                                    provided={provided}
+                                    item={item}
+                                    index={index}
+                                    snapshot={snapshot}
+                                    mainColor={orange[700]}
+                                    hoverColor={orange[50]}
+                                  />
+                                </Grid>
+                              )}
+                            </Draggable>
+                          ))
                         : null}
                       {provided.placeholder}
                     </Grid>
@@ -454,7 +446,6 @@ function CreateDeployment(props) {
                 </div>
               )}
             </Droppable>
-
           </MDBox>
         </CustomComplexProjectCard>
       </DragDropContext>

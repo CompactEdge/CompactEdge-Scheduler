@@ -2,7 +2,6 @@ import React from "react";
 import { Grid } from "@mui/material";
 import CustomComplexProjectCard from "views/Components/CustomComplexProjectCard";
 import EchartComp from "./EchartComp";
-import MDBox from "components/MDBox";
 import NumberComp from "./NumberComp";
 
 function Charts({

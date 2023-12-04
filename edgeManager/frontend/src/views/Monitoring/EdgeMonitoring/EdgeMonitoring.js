@@ -1,19 +1,16 @@
-import React from "react";
-import {
-  Grid,
-  Autocomplete,
-} from "@mui/material";
+import React, { useState, useEffect } from "react";
+import { Grid, Autocomplete } from "@mui/material";
 import CustomComplexProjectCard from "../../Components/CustomComplexProjectCard";
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import LogoKubernetes from "assets/images/logos/kubernetes_logo.png";
-import { blue } from '@mui/material/colors';
-import TextField from '@mui/material/TextField';
+import { blue } from "@mui/material/colors";
+import TextField from "@mui/material/TextField";
 import axios from "axios";
 import _ from "lodash";
 import MDBadge from "components/MDBadge";
 import MDButton from "components/MDButton";
-import { Refresh } from '@mui/icons-material';
+import { Refresh } from "@mui/icons-material";
 import Progress from "views/Components/Progress/Progress";
 
 // const useStyles = makeStyles(styles);
@@ -21,19 +18,19 @@ import Progress from "views/Components/Progress/Progress";
 function EdgeMonitoring(props) {
   // const classes = useStyles();
 
-  const [namespaces, setNamespaces] = React.useState([]);
-  const [selectNamespace, setSelectNamespace] = React.useState(
+  const [namespaces, setNamespaces] = useState([]);
+  const [selectNamespace, setSelectNamespace] = useState(
     sessionStorage.getItem("selectNamespace_edgeMonitoring")
       ? sessionStorage.getItem("selectNamespace_edgeMonitoring")
       : "all"
   );
-  const [state, setState] = React.useState({});
-  const [masterNode, setMasterNode] = React.useState([]);
-  const [isLoading, setIsloading] = React.useState(false);
+  const [state, setState] = useState({});
+  const [masterNode, setMasterNode] = useState([]);
+  const [isLoading, setIsloading] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setIsloading(true);
-    
+
     let stateTmp = {};
     axios("/rest/1.0/k8s/namespace").then((res) => {
       let listNsTmp = [];
@@ -54,14 +51,17 @@ function EdgeMonitoring(props) {
           if (node.node_role === "master") {
             masterNodeTmp.push(node.name);
           } else {
-            nodesTmp.push(node.name);
+            nodesTmp.push({
+              name: node.name,
+              logo: "/public_assets/images/logos/" + node.node_type + "_logo.png",
+            });
           }
         });
       }
+
       setMasterNode(masterNodeTmp);
 
-      const selectNsTmp =
-        selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
+      const selectNsTmp = selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
 
       axios(`/rest/1.0/k8s/pod?namespace=${selectNsTmp}`).then((res) => {
         let podsTmp = [];
@@ -74,19 +74,21 @@ function EdgeMonitoring(props) {
             });
           });
           nodesTmp.map((node) => {
-            stateTmp[node] = podsTmp.filter((pod) => {
-              return pod.node_name === node;
+            stateTmp[node.name] = podsTmp.filter((pod) => {
+              return pod.node_name === node.name;
             });
           });
+
           stateTmp["nodes"] = nodesTmp;
         }
+
         setState(stateTmp);
         setIsloading(false);
       });
     });
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setIsloading(true);
     sessionStorage.setItem("selectNamespace_edgeMonitoring", selectNamespace);
 
@@ -99,14 +101,18 @@ function EdgeMonitoring(props) {
           if (node.node_role === "master") {
             masterNodeTmp.push(node.name);
           } else {
-            nodesTmp.push(node.name);
+            nodesTmp.push({
+              name: node.name,
+              logo: "/public_assets/images/logos/" + node.node_type + "_logo.png",
+            });
           }
         });
       }
+      console.log("nodesTmp 확인");
+      console.log(nodesTmp);
       setMasterNode(masterNodeTmp);
 
-      const selectNsTmp =
-        selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
+      const selectNsTmp = selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
 
       axios(`/rest/1.0/k8s/pod?namespace=${selectNsTmp}`).then((res) => {
         let podsTmp = [];
@@ -119,24 +125,23 @@ function EdgeMonitoring(props) {
             });
           });
           nodesTmp.map((node) => {
-            stateTmp[node] = podsTmp.filter((pod) => {
-              return pod.node_name === node;
+            stateTmp[node.name] = podsTmp.filter((pod) => {
+              return pod.node_name === node.name;
             });
           });
           stateTmp["nodes"] = nodesTmp;
         }
-        // console.log("stateTmp: ", stateTmp);
         setState(stateTmp);
         setIsloading(false);
       });
     });
   }, [selectNamespace]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     console.log("state: ", state);
   }, [state]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     console.log("selectNamespace: ", selectNamespace);
   }, [selectNamespace]);
 
@@ -148,19 +153,23 @@ function EdgeMonitoring(props) {
     axios(`/rest/1.0/k8s/node`).then((res) => {
       let masterNodeTmp = [];
       let nodesTmp = [];
+
       if (res.data.length > 0) {
         res.data.map((node) => {
           if (node.node_role === "master") {
             masterNodeTmp.push(node.name);
           } else {
-            nodesTmp.push(node.name);
+            nodesTmp.push({
+              name: node.name,
+              logo: "/public_assets/images/logos/" + node.node_type + "_logo.png",
+            });
           }
         });
       }
+
       setMasterNode(masterNodeTmp);
-      
-      const selectNsTmp =
-        selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
+
+      const selectNsTmp = selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
 
       axios(`/rest/1.0/k8s/pod?namespace=${selectNsTmp}`).then((res) => {
         let podsTmp = [];
@@ -173,13 +182,12 @@ function EdgeMonitoring(props) {
             });
           });
           nodesTmp.map((node) => {
-            stateTmp[node] = podsTmp.filter((pod) => {
-              return pod.node_name === node;
+            stateTmp[node.name] = podsTmp.filter((pod) => {
+              return pod.node_name === node.name;
             });
           });
           stateTmp["nodes"] = nodesTmp;
         }
-        // console.log("stateTmp: ", stateTmp);
         setState(stateTmp);
         setIsloading(false);
       });
@@ -205,7 +213,8 @@ function EdgeMonitoring(props) {
       <MDBox>
         <CustomComplexProjectCard title={"KUBERNETES"} image={LogoKubernetes}>
           <MDBox mt={5}>
-            <Grid container
+            <Grid
+              container
               display="flex"
               justifyContent="space-between"
               alignItems="center"
@@ -219,31 +228,31 @@ function EdgeMonitoring(props) {
                 </MDBox>
                 {masterNode.length > 0
                   ? masterNode.map((msNode, idx) => {
-                    return (
-                      <div
-                        key={`${msNode}-${idx}`}
-                        style={{
-                          borderRadius: 5,
-                          border: "1px solid lightgrey",
-                          padding: 8,
-                          width: "350px",
-                        }}
-                      >
-                        <MDBox
+                      return (
+                        <div
+                          key={`${msNode}-${idx}`}
+                          style={{
+                            borderRadius: 5,
+                            border: "1px solid lightgrey",
+                            padding: 8,
+                            width: "350px",
+                          }}
                         >
-                          <MDBadge size="xs" color="success" badgeContent={"Node Name"} container sx={{ height: "100%" }} />
-                          <MDBox
-                            mt={-0.5}
-                            ml={0.5}
-                            fontSize="20px"
-                            fontWeight="100"
-                          >
-                            {msNode}
+                          <MDBox>
+                            <MDBadge
+                              size="xs"
+                              color="success"
+                              badgeContent={"Node Name"}
+                              container
+                              sx={{ height: "100%" }}
+                            />
+                            <MDBox mt={-0.5} ml={0.5} fontSize="20px" fontWeight="100">
+                              {msNode}
+                            </MDBox>
                           </MDBox>
-                        </MDBox>
-                      </div>
-                    );
-                  })
+                        </div>
+                      );
+                    })
                   : null}
               </Grid>
               <Grid item>
@@ -279,62 +288,77 @@ function EdgeMonitoring(props) {
             <Grid container spacing={5}>
               {state["nodes"]
                 ? state["nodes"].map((node, idx) => {
-                  return (
-                    <Grid item
-                      key={`${node}-${idx}`}
-                    >
-                      <div
-                        style={{
-                          borderRadius: 5,
-                          border: "1px solid lightgrey",
-                          padding: 8,
-                          width: "350px",
-                          height: "380px",
-                        }}
-                      >
-                        <MDBox mb={1}>
-                          <MDBadge size="xs" color="success" badgeContent={"Node Name"} container />
-                          <MDBox
-                            mt={-0.5}
-                            ml={0.5}
-                            fontSize="20px"
-                            fontWeight="100"
-                          >
-                            {node}
+                    return (
+                      <Grid item key={`${node.name}-${idx}`}>
+                        <div
+                          style={{
+                            borderRadius: 5,
+                            border: "1px solid lightgrey",
+                            padding: 8,
+                            width: "350px",
+                            height: "380px",
+                          }}
+                        >
+                          <MDBox mb={1}>
+                            <MDBox mt={-1}>
+                              <MDBadge
+                                size="xs"
+                                color="success"
+                                badgeContent={"Node Name"}
+                                container
+                              />
+                              {node.logo === "/public_assets/images/logos/onpremise_logo.png" ? (
+                                ""
+                              ) : (
+                                <img
+                                  src={node.logo}
+                                  alt=""
+                                  width="60px"
+                                  height="40px"
+                                  align="right"
+                                  style={{ marginTop: "5.6px" }}
+                                />
+                              )}
+                            </MDBox>
+                            <MDBox mt={-0.5} ml={0.5} fontSize="20px" fontWeight="100">
+                              {node.name}
+                            </MDBox>
                           </MDBox>
-                        </MDBox>
-                        {/* <Divider /> */}
-                        <MDBadge size="xs" color="info" badgeContent={"Pod List"} container />
-                        <div style={{ overflowY: "auto", height: "255px" }}>
-                          {state[node]
-                            ? state[node].map((item, index) => (
-                              <div key={`${item.id}-${index}`}>
-                                <MDBox
-                                  style={{
-                                    borderRadius: 5,
-                                    padding: 16,
-                                    margin: `0 0 8px 0`,
-                                    borderColor: blue[200],
-                                    border: `1px solid ${blue[800]}`
-                                  }}
-                                >
-                                  <MDBox
-                                    fontSize="14px"
-                                    fontWeight="500"
-                                    textTransform="capitalize"
-                                    sx={{ color: blue[800] }}
-                                  >
-                                    {item.content}
-                                  </MDBox>
-                                </MDBox>
-                              </div>
-                            ))
-                            : null}
+
+                          {/* <Divider /> */}
+                          <MDBox mb={0.1}>
+                            <MDBadge size="xs" color="info" badgeContent={"Pod List"} container />
+                            <div style={{ overflowY: "auto", height: "255px" }}>
+                              {state[node.name]
+                                ? state[node.name].map((item, index) => (
+                                    <div key={`${item.id}-${index}`}>
+                                      <MDBox
+                                        style={{
+                                          borderRadius: 5,
+                                          padding: 16,
+                                          margin: `0 0 8px 0`,
+                                          borderColor: blue[200],
+                                          border: `1px solid ${blue[800]}`,
+                                        }}
+                                      >
+                                        <MDBox
+                                          fontSize="14px"
+                                          fontWeight=""
+                                          textTransform="lowercase"
+                                          sx={{ color: blue[800] }}
+                                        >
+                                          {item.content}
+                                        </MDBox>
+                                      </MDBox>
+                                    </div>
+                                  ))
+                                : null}
+                            </div>
+                          </MDBox>
                         </div>
-                      </div>
-                    </Grid>
-                  );
-                })
+                      </Grid>
+                    );
+                  })
                 : null}
             </Grid>
           </MDBox>

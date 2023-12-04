@@ -16,7 +16,7 @@ Coded by www.creative-tim.com
 import { useState, useEffect } from "react";
 
 // react-router components
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 
 // prop-types is a library for typechecking of props.
 import PropTypes from "prop-types";
@@ -30,6 +30,8 @@ import Icon from "@mui/material/Icon";
 
 // Material Dashboard 2 PRO React components
 import MDBox from "components/MDBox";
+import MDInput from "components/MDInput";
+import MDBadge from "components/MDBadge";
 
 // Material Dashboard 2 PRO React examples
 import Breadcrumbs from "modules/Breadcrumbs";
@@ -40,7 +42,9 @@ import {
   navbar,
   navbarContainer,
   navbarRow,
+  navbarIconButton,
   navbarDesktopMenu,
+  navbarMobileMenu,
 } from "modules/Navbars/DashboardNavbar/styles";
 
 // Material Dashboard 2 PRO React context
@@ -136,6 +140,55 @@ function DashboardNavbar({ absolute, light, isMini }) {
             </Icon>
           </IconButton>
         </MDBox>
+        {isMini ? null : (
+          <MDBox sx={(theme) => navbarRow(theme, { isMini })}>
+            <MDBox pr={1}>
+              <MDInput label="Search here" />
+            </MDBox>
+            <MDBox color={light ? "white" : "inherit"}>
+              <Link to="/authentication/sign-in/basic">
+                <IconButton sx={navbarIconButton} size="small" disableRipple>
+                  <Icon sx={iconsStyle}>account_circle</Icon>
+                </IconButton>
+              </Link>
+              <IconButton
+                size="small"
+                disableRipple
+                color="inherit"
+                sx={navbarMobileMenu}
+                onClick={handleMiniSidenav}
+              >
+                <Icon sx={iconsStyle} fontSize="medium">
+                  {miniSidenav ? "menu_open" : "menu"}
+                </Icon>
+              </IconButton>
+              <IconButton
+                size="small"
+                disableRipple
+                color="inherit"
+                sx={navbarIconButton}
+                onClick={handleConfiguratorOpen}
+              >
+                <Icon sx={iconsStyle}>settings</Icon>
+              </IconButton>
+              <IconButton
+                size="small"
+                disableRipple
+                color="inherit"
+                sx={navbarIconButton}
+                aria-controls="notification-menu"
+                aria-haspopup="true"
+                variant="contained"
+                onClick={handleOpenMenu}
+              >
+                <MDBadge badgeContent={9} color="error" size="xs" circular>
+                  <Icon sx={iconsStyle}>notifications</Icon>
+                </MDBadge>
+              </IconButton>
+              {renderMenu()}
+            </MDBox>
+          </MDBox>
+        )}
       </Toolbar>
     </AppBar>
   );

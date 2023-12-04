@@ -22,9 +22,6 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 
-// Material Dashboard 2 PRO React examples
-import Sidenav from "examples/Sidenav";
-
 // Material Dashboard 2 PRO React themes
 import theme from "assets/theme";
 
@@ -38,21 +35,11 @@ import routes from "routes";
 // Material Dashboard 2 PRO React contexts
 import { useMaterialUIController, setMiniSidenav, setOpenConfigurator } from "context";
 
-// Images
-import brandWhite from "assets/images/logo-ct.png";
-import brandDark from "assets/images/logo-ct-dark.png";
-
 export default function Frame() {
   const [controller, dispatch] = useMaterialUIController();
   const {
     miniSidenav,
     direction,
-    layout,
-    openConfigurator,
-    sidenavColor,
-    transparentSidenav,
-    whiteSidenav,
-    darkMode,
   } = controller;
   const [onMouseEnter, setOnMouseEnter] = useState(false);
   const [rtlCache, setRtlCache] = useState(null);

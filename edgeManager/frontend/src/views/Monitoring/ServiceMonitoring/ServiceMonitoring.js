@@ -1,20 +1,16 @@
-import React, { useEffect, useState } from "react";
 import {
-  Box,
   Card,
   Dialog,
   DialogActions,
   DialogContent,
-  DialogTitle,
+  DialogTitle
 } from "@mui/material";
-// import TabPanel from '@mui/lab/TabPanel';
-import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "../../Components/DashboardNavbar";
+import axios from "axios";
 import MDBox from "components/MDBox";
+import MDButton from "components/MDButton";
+import React, { useEffect, useState } from "react";
 import CustomDataTable from "../../Components/DataTable/CustomDataTable";
 import CustomIdCell from "../../Components/DataTable/CustomIdCell";
-import axios from "axios";
-import MDButton from "components/MDButton";
 import ModalData from "../../Components/DetailModalComp/DetailModalComp";
 
 function ServiceMonitoring(props) {

@@ -6,7 +6,6 @@ export default function EchartComp({
   reqData,
   reqLoading,
   setReqComplete,
-  setReqLoading,
 }) {
 
   const getChartSeries = (Data, type, isArea) => {

@@ -30,9 +30,6 @@ import MDAvatar from "components/MDAvatar";
 function NumberComp({
   color,
   title,
-  count,
-  percentage,
-  icon,
   item,
   reqData,
   reqLoading,

@@ -13,49 +13,37 @@ Coded by www.creative-tim.com
 * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 */
 
-import { useState, useEffect, useMemo, Fragment } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 
 // react-router components
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 // @mui material components
-import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import Icon from "@mui/material/Icon";
-
-// Material Dashboard 2 PRO React components
-import MDBox from "components/MDBox";
+import { ThemeProvider } from "@mui/material/styles";
 
 // Material Dashboard 2 PRO React examples
-import Sidenav from "examples/Sidenav";
-import Configurator from "examples/Configurator";
+import Sidenav from "modules/Sidenav";
 
 // Material Dashboard 2 PRO React themes
 import theme from "assets/theme";
-import themeRTL from "assets/theme/theme-rtl";
-
-// Material Dashboard 2 PRO React Dark Mode themes
-import themeDark from "assets/theme-dark";
-import themeDarkRTL from "assets/theme-dark/theme-rtl";
 
 // RTL plugins
-import rtlPlugin from "stylis-plugin-rtl";
-import { CacheProvider } from "@emotion/react";
 import createCache from "@emotion/cache";
+import rtlPlugin from "stylis-plugin-rtl";
 
 // Material Dashboard 2 PRO React routes
 import routes from "routes";
 
 // Material Dashboard 2 PRO React contexts
-import { useMaterialUIController, setMiniSidenav, setOpenConfigurator } from "context";
+import { setMiniSidenav, useMaterialUIController } from "context";
 
 // Images
-import brandWhite from "assets/images/logo-ct.png";
 import brandDark from "assets/images/logo-ct-dark.png";
-import PageLayout from "examples/LayoutContainers/PageLayout";
-import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
-import EdgeMonitoring from "views/Monitoring/EdgeMonitoring/EdgeMonitoring";
+import brandWhite from "assets/images/logo-ct.png";
 import * as config from "config";
+import DashboardLayout from "modules/LayoutContainers/DashboardLayout";
+import PageLayout from "modules/LayoutContainers/PageLayout";
 
 let sideTitle = config.sideTitle;
 
@@ -65,7 +53,6 @@ export default function App() {
     miniSidenav,
     direction,
     layout,
-    openConfigurator,
     sidenavColor,
     transparentSidenav,
     whiteSidenav,
@@ -100,9 +87,6 @@ export default function App() {
       setOnMouseEnter(false);
     }
   };
-
-  // Change the openConfigurator state
-  const handleConfiguratorOpen = () => setOpenConfigurator(dispatch, !openConfigurator);
 
   // Setting the dir attribute for the body element
   useEffect(() => {
@@ -155,34 +139,6 @@ export default function App() {
       return null;
     });
 
-  const configsButton = (
-    <MDBox
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      width="3.25rem"
-      height="3.25rem"
-      bgColor="white"
-      shadow="sm"
-      borderRadius="50%"
-      position="fixed"
-      right="2rem"
-      bottom="2rem"
-      zIndex={99}
-      color="dark"
-      sx={{ cursor: "pointer" }}
-      onClick={handleConfiguratorOpen}
-    >
-      <Icon fontSize="small" color="inherit">
-        settings
-      </Icon>
-    </MDBox>
-  );
-
-  // useEffect(() => {
-  //   console.log(layout);
-  // }, [layout]);
-
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -196,8 +152,6 @@ export default function App() {
             onMouseEnter={handleOnMouseEnter}
             onMouseLeave={handleOnMouseLeave}
           />
-          {/* <Configurator /> */}
-          {/* {configsButton} */}
         </Fragment>
       )}
 

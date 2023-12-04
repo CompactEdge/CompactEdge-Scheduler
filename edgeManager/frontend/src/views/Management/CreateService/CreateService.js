@@ -1,17 +1,12 @@
 import React from "react";
-import {
-  Grid,
-  Autocomplete,
-  TextField,
-} from "@mui/material";
-import { blue, orange, indigo } from '@mui/material/colors';
+import { Grid, Autocomplete, TextField } from "@mui/material";
+import { blue, orange, indigo } from "@mui/material/colors";
 import CustomComplexProjectCard from "views/Components/CustomComplexProjectCard";
 import DialogComp from "views/Components/DialogComp/DialogComp";
 import Progress from "views/Components/Progress/Progress";
 import MDBox from "components/MDBox";
 import MDBadge from "components/MDBadge";
 import MDTypography from "components/MDTypography";
-import LogoDocker from "assets/images/logos/docker_logo.png";
 import LogoKubernetes from "assets/images/logos/kubernetes_logo.png";
 import axios from "axios";
 import _ from "lodash";
@@ -55,8 +50,7 @@ function CreateService(props) {
   const [isLoading, setIsLoading] = React.useState(false);
 
   const [serviceList, setServiceList] = React.useState([]);
-  const [deploymentList, setDeploymentList] = React.useState([]);
-
+  const [serviceTargetList, setServiceTargetList] = React.useState({});
 
   const reorder = (list, startIndex, endIndex) => {
     const result = list;
@@ -66,29 +60,21 @@ function CreateService(props) {
     return result;
   };
 
-  // const dispatch = useDispatch();
-
   // React.useEffect(() => {
   //   console.log("state: ", state);
   // }, [state]);
 
   // log
-  React.useEffect(() => {
-    console.log("deploymentList: ", deploymentList);
-  }, [deploymentList]);
-  React.useEffect(() => {
-    console.log("selectedName: ", selectedName);
-  }, [selectedName]);
-  React.useEffect(() => {
-    console.log("inputSelector: ", inputSelector);
-  }, [inputSelector]);
-  React.useEffect(() => {
-    console.log("inputNodePort: ", inputNodePort);
-  }, [inputNodePort]);
-
+  // React.useEffect(() => {}, [serviceTargetList]);
   // React.useEffect(() => {
-  //   console.log("selectNamespace: ", selectNamespace);
-  // }, [selectNamespace]);
+  //   console.log("selectedName: ", selectedName);
+  // }, [selectedName]);
+  // React.useEffect(() => {
+  //   console.log("inputSelector: ", inputSelector);
+  // }, [inputSelector]);
+  // React.useEffect(() => {
+  //   console.log("inputNodePort: ", inputNodePort);
+  // }, [inputNodePort]);
 
   React.useEffect(() => {
     if (inputType === "ClusterIP") {
@@ -99,8 +85,7 @@ function CreateService(props) {
   }, [inputType]);
 
   React.useEffect(() => {
-    const selectNsTmp =
-      selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
+    const selectNsTmp = selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
 
     axios("/rest/1.0/k8s/namespace").then((res) => {
       let listNsTmp = [];
@@ -113,35 +98,40 @@ function CreateService(props) {
       setNamespaces(listNsTmp);
     });
     axios(`/rest/1.0/k8s/service?namespace=${selectNsTmp}`).then((res) => {
-      // console.log("servList: ", res.data);
       setServiceList(res.data);
     });
-    axios(`/rest/1.0/k8s/deployment?namespace=${selectNsTmp}`).then((res) => {
-      setDeploymentList(res.data);
+    axios(`/rest/1.0/k8s/service_target?namespace=${selectNsTmp}`).then((res) => {
+      let serviceTargetListTmp = [];
+      for (var [key, value] of Object.entries(res.data)) {
+        serviceTargetListTmp[key] = value;
+      }
+      setServiceTargetList(serviceTargetListTmp);
     });
   }, []);
 
   React.useEffect(() => {
     sessionStorage.setItem("selectNamespace_createService", selectNamespace);
 
-    const selectNsTmp =
-      selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
+    const selectNsTmp = selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
 
     axios(`/rest/1.0/k8s/service?namespace=${selectNsTmp}`).then((res) => {
-      // console.log("servList: ", res.data);
       setServiceList(res.data);
     });
-    axios(`/rest/1.0/k8s/deployment?namespace=${selectNsTmp}`).then((res) => {
-      setDeploymentList(res.data);
+    axios(`/rest/1.0/k8s/service_target?namespace=${selectNsTmp}`).then((res) => {
+      let serviceTargetListTmp = {};
+
+      for (var [key, value] of Object.entries(res.data)) {
+        serviceTargetListTmp[key] = value;
+      }
+      setServiceTargetList(serviceTargetListTmp);
     });
   }, [selectNamespace]);
 
   const onDragEnd = (result) => {
-    // console.log("result: ", result);
-    const { source, destination, draggableId } = result;
-    // console.log("source: ", source);
-    // console.log("destination: ", destination);
-    // console.log("draggableId: ", draggableId);
+    const { source, destination } = result;
+    let { draggableId } = result;
+    draggableId = draggableId.indexOf("_") === 0 ? draggableId.substr(1) : draggableId;
+
     setSourceData(source);
     setDestinationData(destination);
     setSelectedName(draggableId);
@@ -156,18 +146,25 @@ function CreateService(props) {
         return false;
       }
 
-      if (source.droppableId !== "deployment") {
+      if (
+        source.droppableId !== "deployment" ||
+        source.droppableId !== "daemonset" ||
+        source.droppableId !== "statefulset"
+      ) {
         setModalDelete(true);
       }
       return;
     }
     if (source.droppableId === destination.droppableId) {
       const reorderResult = reorder(
-        destination.droppableId === "deployment" ? deploymentList : serviceList,
+        destination.droppableId === "deployment" ||
+          destination.droppableId === "daemonset" ||
+          destination.droppableId === "statefulset"
+          ? serviceTargetList[destination.droppableId]
+          : serviceList,
         source.index,
         destination.index
       );
-
       let result = _.cloneDeep(state);
 
       result[source.droppableId] = reorderResult;
@@ -175,12 +172,21 @@ function CreateService(props) {
     }
 
     if (source.droppableId !== destination.droppableId) {
-      if (destination.droppableId === "deployment") {
+      // if (destination.droppableId === "deployment") {
+      if (
+        destination.droppableId === "deployment" ||
+        destination.droppableId === "daemonset" ||
+        destination.droppableId === "statefulset"
+      ) {
         return;
       }
 
       // 여기서부터 service 배포
-      if (source.droppableId === "deployment") {
+      if (
+        source.droppableId === "deployment" ||
+        source.droppableId === "daemonset" ||
+        source.droppableId === "statefulset"
+      ) {
         if (selectNamespace === "all") {
           // default로 설정하기
           setSelectNamespace("default");
@@ -225,7 +231,7 @@ function CreateService(props) {
           setModalAlert(true);
         } else {
           alert("삭제에 실패했습니다.");
-        };
+        }
 
         let stateTmp = {};
         axios("/rest/1.0/repos/tags").then((res) => {
@@ -239,16 +245,19 @@ function CreateService(props) {
           stateTmp["images"] = imagesTmp;
           setState(stateTmp);
 
-          const selectNsTmp =
-            selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
+          const selectNsTmp = selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
 
           axios(`/rest/1.0/k8s/service?namespace=${selectNsTmp}`).then((res) => {
             setServiceList(res.data);
             setInputName();
             setInputPort();
           });
-          axios(`/rest/1.0/k8s/deployment?namespace=${selectNsTmp}`).then((res) => {
-            setDeploymentList(res.data);
+          axios(`/rest/1.0/k8s/service_target?namespace=${selectNsTmp}`).then((res) => {
+            let serviceTargetListTmp = {};
+            for (var [key, value] of Object.entries(res.data)) {
+              serviceTargetListTmp[key] = value;
+            }
+            setServiceTargetList(serviceTargetListTmp);
           });
         });
       })
@@ -264,7 +273,6 @@ function CreateService(props) {
 
   const handleCreateBtn = () => {
     setIsLoading(true);
-    // console.log("inputName: ", inputName);
     if (!inputName) {
       setIsLoading(false);
       // alert("배포할 이름을 입력해주세요.");
@@ -279,7 +287,9 @@ function CreateService(props) {
       console.log("-target_port: ", inputTargetPort);
       console.log("-node_port: ", inputNodePort);
       axios
-        .post(`/rest/1.0/k8s/service/${selectNamespace}/${inputName}/${inputType}/${inputSelector}/${inputPort}/${inputTargetPort}/${inputNodePort}`)
+        .post(
+          `/rest/1.0/k8s/service/${selectNamespace}/${inputName}/${inputType}/${inputSelector}/${inputPort}/${inputTargetPort}/${inputNodePort}`
+        )
         .then((res) => {
           if (res.data === "ok") {
             // alert("배포가 완료됐습니다.");
@@ -289,16 +299,20 @@ function CreateService(props) {
             setModalAlert(true);
             setModalCreate(false);
           }
-          const selectNsTmp =
-            selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
+          const selectNsTmp = selectNamespace === "all" ? "" : _.cloneDeep(selectNamespace);
 
           axios(`/rest/1.0/k8s/service?namespace=${selectNsTmp}`).then((res) => {
             setServiceList(res.data);
             setInputName();
             setInputPort();
           });
-          axios(`/rest/1.0/k8s/deployment?namespace=${selectNsTmp}`).then((res) => {
-            setDeploymentList(res.data);
+          axios(`/rest/1.0/k8s/service_target?namespace=${selectNsTmp}`).then((res) => {
+            let serviceTargetListTmp = {};
+
+            for (var [key, value] of Object.entries(res.data)) {
+              serviceTargetListTmp[key] = value;
+            }
+            setServiceTargetList(serviceTargetListTmp);
           });
         })
         .catch((err) => {
@@ -329,15 +343,12 @@ function CreateService(props) {
                 <Droppable droppableId="service">
                   {(provided, snapshot) => (
                     <Grid item xs={12}>
-                      <div
-                        ref={provided.innerRef}
-                      >
+                      <div ref={provided.innerRef}>
                         <div
                           style={{
                             borderRadius: 5,
                             border: "1px solid lightgrey",
                             padding: 8,
-                            // width: "350px",
                             height: "380px",
                           }}
                         >
@@ -345,28 +356,22 @@ function CreateService(props) {
                           <div style={{ overflowY: "auto", height: "320px" }}>
                             {serviceList.length > 0
                               ? serviceList.map((item, index) => (
-                                <Draggable
-                                  key={item.name}
-                                  draggableId={item.name}
-                                  index={index}
-                                >
-                                  {(provided, snapshot) => {
-                                    // console.log("snapshot:", snapshot)
-                                    // console.log("provided:", provided)
-                                    return (
-                                      <HoverBox
-                                        type="service"
-                                        provided={provided}
-                                        item={item}
-                                        index={index}
-                                        snapshot={snapshot}
-                                        mainColor={blue[800]}
-                                        hoverColor={indigo[50]}
-                                      />
-                                    )
-                                  }}
-                                </Draggable>
-                              ))
+                                  <Draggable key={item.name} draggableId={item.name} index={index}>
+                                    {(provided, snapshot) => {
+                                      return (
+                                        <HoverBox
+                                          type="service"
+                                          provided={provided}
+                                          item={item}
+                                          index={index}
+                                          snapshot={snapshot}
+                                          mainColor={blue[800]}
+                                          hoverColor={indigo[50]}
+                                        />
+                                      );
+                                    }}
+                                  </Draggable>
+                                ))
                               : null}
                             {provided.placeholder}
                           </div>
@@ -378,7 +383,8 @@ function CreateService(props) {
               </Grid>
             </Grid>
             <Grid item mt={5} xs={12} lg={3}>
-              <Grid container
+              <Grid
+                container
                 sx={{
                   display: "flex",
                   justifyContent: "flex-end",
@@ -410,67 +416,70 @@ function CreateService(props) {
           </Grid>
         </CustomComplexProjectCard>
         <MDBox mb={4} />
-        <CustomComplexProjectCard title={"DOCKER"} image={LogoDocker}>
-          <MDBox mt={5}>
-            <MDBox mb={1}>
-              <MDTypography variant="h6" fontWeight="medium" textTransform="capitalize">
-                Docker local repository
-              </MDTypography>
-            </MDBox>
-            <Droppable droppableId="deployment" direction="horizontal">
-              {(provided, snapshot) => (
-                <div
-                  ref={provided.innerRef}
-                >
-                  <div
-                    style={{
-                      borderRadius: 5,
-                      border: "1px solid lightgrey",
-                      padding: 8,
-                      width: "100%",
-                    }}
-                  >
-                    <MDBox>
-                      <MDBadge size="xs" color="warning" badgeContent={"Deployment List"} container />
-                    </MDBox>
-                    <Grid container
-                      spacing={1}
-                      display="flex"
-                      justifyContent="flex-start"
-                      flexWrap="wrap"
-                    >
-                      {deploymentList.length > 0
-                        ? deploymentList.map((item, index) => (
-                          <Draggable
-                            key={item.name}
-                            draggableId={item.name}
-                            index={index}
+        {/* Controller list */}
+        <CustomComplexProjectCard title={"Controller"} image={LogoKubernetes}>
+          {Object.keys(serviceTargetList).length > 0
+            ? Object.keys(serviceTargetList).map((key) => (
+                <MDBox mt={5} key={key}>
+                  <Droppable droppableId={key} direction="horizontal">
+                    {(provided, snapshot) => (
+                      <div ref={provided.innerRef}>
+                        <div
+                          style={{
+                            borderRadius: 5,
+                            border: "1px solid lightgrey",
+                            padding: 8,
+                            width: "100%",
+                          }}
+                        >
+                          <MDBox>
+                            <MDBadge
+                              size="xs"
+                              color="warning"
+                              badgeContent={key + " List"}
+                              container
+                            />
+                          </MDBox>
+                          <Grid
+                            container
+                            spacing={1}
+                            display="flex"
+                            justifyContent="flex-start"
+                            flexWrap="wrap"
                           >
-                            {(provided, snapshot) => (
-                              <Grid item>
-                                <HoverBox
-                                  type="image"
-                                  width="350px"
-                                  provided={provided}
-                                  item={item}
-                                  index={index}
-                                  snapshot={snapshot}
-                                  mainColor={orange[700]}
-                                  hoverColor={orange[50]}
-                                />
-                              </Grid>
-                            )}
-                          </Draggable>
-                        ))
-                        : null}
-                      {provided.placeholder}
-                    </Grid>
-                  </div>
-                </div>
-              )}
-            </Droppable>
-
-          </MDBox>
+                            {serviceTargetList[key].length > 0
+                              ? serviceTargetList[key].map((item, index) => (
+                                  <Draggable
+                                    key={item.name}
+                                    draggableId={"_" + item.name}
+                                    index={index}
+                                  >
+                                    {(provided, snapshot) => (
+                                      <Grid item>
+                                        <HoverBox
+                                          type="image"
+                                          width="350px"
+                                          provided={provided}
+                                          item={item}
+                                          index={index}
+                                          snapshot={snapshot}
+                                          mainColor={orange[700]}
+                                          hoverColor={orange[50]}
+                                        />
+                                      </Grid>
+                                    )}
+                                  </Draggable>
+                                ))
+                              : null}
+                            {provided.placeholder}
+                          </Grid>
+                        </div>
+                      </div>
+                    )}
+                  </Droppable>
+                </MDBox>
+              ))
+            : null}
         </CustomComplexProjectCard>
       </DragDropContext>
 
