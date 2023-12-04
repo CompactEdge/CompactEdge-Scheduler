@@ -1,0 +1,21 @@
+[Unit]
+Description=edgeManager gunicorn daemon
+After=network-online.target
+
+[Service]
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/app/edgeBigdata/app/edgeManager/backend
+ExecStart=/bin/bash -c 'python3.9 -m gunicorn.app.wsgiapp \
+            --workers 4 --threads 4 \
+            --access-logfile /applog/edgeManager/access.log \
+            --error-logfile /applog/edgeManager/error.log \
+            --bind 0.0.0.0:9000 \
+            --limit-request-line 0 \
+            --timeout 300 \
+            run:app'
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+
+[Install]
+WantedBy=multi-user.target
