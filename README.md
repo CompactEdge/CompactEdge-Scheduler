@@ -1,4 +1,4 @@
-# ETRI k8s with a new scheduler
+# CompactEdge Scheduler
 
 k8s 기반 엣지 플랫폼의 관리 기능과 RTCore를 기반으로 한 서비스의 실시간 스케줄링 설정 기능을 제공합니다. 
 
